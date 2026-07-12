@@ -1,5 +1,6 @@
 package com.spotifysync.exception;
 
+import io.sentry.Sentry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +22,7 @@ public class GlobalExceptionHandler {
         } else {
             log.error("Spotify API Exception: {}", ex.getMessage(), ex);
         }
+        Sentry.captureException(ex);
         Map<String, String> body = new HashMap<>();
         body.put("error", ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
@@ -37,6 +39,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGenericException(Exception ex) {
         log.error("Unhandled exception: {}", ex.getMessage(), ex);
+        Sentry.captureException(ex);
         Map<String, String> body = new HashMap<>();
         body.put("error", "Internal server error: " + ex.getMessage());
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);

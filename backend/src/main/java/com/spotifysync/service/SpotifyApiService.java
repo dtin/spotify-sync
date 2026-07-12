@@ -32,6 +32,15 @@ public class SpotifyApiService {
     @Value("${spotify.api.host:https://api.spotify.com}")
     private String spotifyApiHost;
 
+    @Value("${spotify.api.paths.playlists:/v1/me/playlists}")
+    private String pathPlaylists;
+
+    @Value("${spotify.api.paths.tracks:/v1/me/tracks}")
+    private String pathTracks;
+
+    @Value("${spotify.api.paths.albums:/v1/me/albums}")
+    private String pathAlbums;
+
     @Value("${spotify.api.limit.playlists:50}")
     private int playlistLimit;
 
@@ -44,7 +53,7 @@ public class SpotifyApiService {
     // --- PLAYLISTS ---
 
     public List<PlaylistResponse> getUserPlaylists(String userSessionId, AccountType accountType) {
-        String url = new StringBuilder(spotifyApiHost).append("/v1/me/playlists?limit=").append(playlistLimit).toString();
+        String url = new StringBuilder(spotifyApiHost).append(pathPlaylists).append("?limit=").append(playlistLimit).toString();
         return spotifyApiUtils.fetchAllItems(userSessionId, accountType, url, "Failed to fetch playlists", item -> {
             PlaylistResponse pr = new PlaylistResponse();
             pr.setSpotifyPlaylistId(item.get("id").asText());
@@ -65,7 +74,7 @@ public class SpotifyApiService {
     // --- LIKED SONGS ---
 
     public List<TrackResponse> getSavedTracks(String userSessionId, AccountType accountType) {
-        String url = new StringBuilder(spotifyApiHost).append("/v1/me/tracks?limit=").append(trackLimit).toString();
+        String url = new StringBuilder(spotifyApiHost).append(pathTracks).append("?limit=").append(trackLimit).toString();
         return spotifyApiUtils.fetchAllItems(userSessionId, accountType, url, "Failed to fetch liked songs", item -> {
             JsonNode trackNode = item.get("track");
             if (trackNode == null || trackNode.isNull()) return null;
@@ -94,7 +103,7 @@ public class SpotifyApiService {
     // --- SAVED ALBUMS ---
 
     public List<AlbumResponse> getSavedAlbums(String userSessionId, AccountType accountType) {
-        String url = new StringBuilder(spotifyApiHost).append("/v1/me/albums?limit=").append(albumLimit).toString();
+        String url = new StringBuilder(spotifyApiHost).append(pathAlbums).append("?limit=").append(albumLimit).toString();
         return spotifyApiUtils.fetchAllItems(userSessionId, accountType, url, "Failed to fetch saved albums", item -> {
             JsonNode albumNode = item.get("album");
             if (albumNode == null || albumNode.isNull()) return null;

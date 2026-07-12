@@ -42,18 +42,33 @@ public class SpotifyAuthService {
     
     @Value("${spotify.api.host:https://api.spotify.com}")
     private String spotifyApiHost;
+    
+    @Value("${spotify.api.accounts-host:https://accounts.spotify.com}")
+    private String spotifyAccountsHost;
+    
+    @Value("${spotify.api.paths.authorize:/authorize}")
+    private String pathAuthorize;
+    
+    @Value("${spotify.api.paths.token:/api/token}")
+    private String pathToken;
+    
+    @Value("${spotify.api.paths.me:/v1/me}")
+    private String pathMe;
+
     private final ObjectMapper objectMapper;
-    private final SpotifyApiClient restTemplate;
+    private final RestTemplate restTemplate;
     
     public String generateAuthUrl(AccountType accountType, String userSessionId) {
         String state = accountType.name() + "_" + userSessionId;
-        return "https://accounts.spotify.com/authorize" +
-                "?response_type=code" +
-                "&client_id=" + clientId +
-                "&scope=" + scopes +
-                "&redirect_uri=" + redirectUri +
-                "&state=" + state +
-                "&show_dialog=true";
+        return new StringBuilder(spotifyAccountsHost)
+                .append(pathAuthorize)
+                .append("?response_type=code")
+                .append("&client_id=").append(clientId)
+                .append("&scope=").append(scopes)
+                .append("&redirect_uri=").append(redirectUri)
+                .append("&state=").append(state)
+                .append("&show_dialog=true")
+                .toString();
     }
     
     public String handleCallback(String code, String state) {
@@ -82,7 +97,8 @@ public class SpotifyAuthService {
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
         
         try {
-            ResponseEntity<String> response = restTemplate.postForEntity("https://accounts.spotify.com/api/token", request, String.class);
+            String url = new StringBuilder(spotifyAccountsHost).append(pathToken).toString();
+            ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
             JsonNode jsonNode = objectMapper.readTree(response.getBody());
             
             String accessToken = jsonNode.get("access_token").asText();
@@ -125,7 +141,7 @@ public class SpotifyAuthService {
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(accessToken);
         HttpEntity<String> request = new HttpEntity<>(headers);
-        String url = new StringBuilder(spotifyApiHost).append("/v1/me").toString();
+        String url = new StringBuilder(spotifyApiHost).append(pathMe).toString();
         ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, request, String.class);
         return objectMapper.readTree(response.getBody());
     }
@@ -153,7 +169,8 @@ public class SpotifyAuthService {
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
         
         try {
-            ResponseEntity<String> response = restTemplate.postForEntity("https://accounts.spotify.com/api/token", request, String.class);
+            String url = new StringBuilder(spotifyAccountsHost).append(pathToken).toString();
+            ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
             JsonNode jsonNode = objectMapper.readTree(response.getBody());
             
             String accessToken = jsonNode.get("access_token").asText();

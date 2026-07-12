@@ -48,6 +48,21 @@ public class SyncService {
     @Value("${spotify.api.host:https://api.spotify.com}")
     private String spotifyApiHost;
 
+    @Value("${spotify.api.paths.tracks:/v1/me/tracks}")
+    private String pathTracks;
+
+    @Value("${spotify.api.paths.albums:/v1/me/albums}")
+    private String pathAlbums;
+
+    @Value("${spotify.api.paths.me:/v1/me}")
+    private String pathMe;
+
+    @Value("${spotify.api.paths.users:/v1/users}")
+    private String pathUsers;
+
+    @Value("${spotify.api.paths.base-playlists:/v1/playlists}")
+    private String pathBasePlaylists;
+
     @Value("${spotify.api.limit.sync-playlist-tracks:100}")
     private int syncPlaylistTracksLimit;
 
@@ -197,7 +212,7 @@ public class SyncService {
             ArrayNode idsNode = body.putArray("ids");
             batch.forEach(idsNode::add);
             
-            String url = new StringBuilder(spotifyApiHost).append("/v1/me/tracks").toString();
+            String url = new StringBuilder(spotifyApiHost).append(pathTracks).toString();
             restTemplate.put(url, destToken, body.toString(), String.class);
             
             synchronized (session) {
@@ -208,7 +223,7 @@ public class SyncService {
     }
 
     private void syncPlaylist(SyncTask task, String sourceToken, String destToken, String destUserId, SyncSession session) throws Exception {
-        String plUrl = new StringBuilder(spotifyApiHost).append("/v1/playlists/").append(task.getSourcePlaylistId()).toString();
+        String plUrl = new StringBuilder(spotifyApiHost).append(pathBasePlaylists).append("/").append(task.getSourcePlaylistId()).toString();
         ResponseEntity<String> plResp = restTemplate.get(plUrl, sourceToken, String.class);
         JsonNode plNode = objectMapper.readTree(plResp.getBody());
         String name = plNode.get("name").asText();
@@ -227,7 +242,7 @@ public class SyncService {
         body.put("description", desc + " (Synced)");
         body.put("public", false);
         
-        String createUrl = new StringBuilder(spotifyApiHost).append("/v1/users/").append(destUserId).append("/playlists").toString();
+        String createUrl = new StringBuilder(spotifyApiHost).append(pathUsers).append("/").append(destUserId).append("/playlists").toString();
         ResponseEntity<String> createResp = restTemplate.post(createUrl, destToken, body.toString(), String.class);
         String targetPlaylistId = objectMapper.readTree(createResp.getBody()).get("id").asText();
         
@@ -237,7 +252,7 @@ public class SyncService {
         }
         
         List<String> trackUris = new ArrayList<>();
-        String url = new StringBuilder(spotifyApiHost).append("/v1/playlists/").append(task.getSourcePlaylistId()).append("/tracks?limit=").append(syncPlaylistTracksLimit).toString();
+        String url = new StringBuilder(spotifyApiHost).append(pathBasePlaylists).append("/").append(task.getSourcePlaylistId()).append("/tracks?limit=").append(syncPlaylistTracksLimit).toString();
         
         while (url != null && !url.equals("null")) {
             ResponseEntity<String> response = restTemplate.get(url, sourceToken, String.class);
@@ -266,7 +281,7 @@ public class SyncService {
             ArrayNode urisNode = addBody.putArray("uris");
             batch.forEach(urisNode::add);
             
-            String addUrl = new StringBuilder(spotifyApiHost).append("/v1/playlists/").append(targetPlaylistId).append("/tracks").toString();
+            String addUrl = new StringBuilder(spotifyApiHost).append(pathBasePlaylists).append("/").append(targetPlaylistId).append("/tracks").toString();
             restTemplate.post(addUrl, destToken, addBody.toString(), String.class);
             
             synchronized (session) {
@@ -281,7 +296,7 @@ public class SyncService {
         ArrayNode idsNode = body.putArray("ids");
         idsNode.add(task.getSourceAlbumId());
         
-        String url = new StringBuilder(spotifyApiHost).append("/v1/me/albums").toString();
+        String url = new StringBuilder(spotifyApiHost).append(pathAlbums).toString();
         restTemplate.put(url, destToken, body.toString(), String.class);
         
         synchronized (session) {
@@ -292,7 +307,7 @@ public class SyncService {
     }
     
     private String getUserId(String token) throws Exception {
-        String url = new StringBuilder(spotifyApiHost).append("/v1/me").toString();
+        String url = new StringBuilder(spotifyApiHost).append(pathMe).toString();
         ResponseEntity<String> response = restTemplate.get(url, token, String.class);
         return objectMapper.readTree(response.getBody()).get("id").asText();
     }

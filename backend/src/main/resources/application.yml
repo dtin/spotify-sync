@@ -30,6 +30,16 @@ spotify:
   frontend-url: ${FRONTEND_URL:http://localhost:3000}
   api:
     host: ${SPOTIFY_API_HOST:https://api.spotify.com}
+    accounts-host: ${SPOTIFY_ACCOUNTS_HOST:https://accounts.spotify.com}
+    paths:
+      authorize: ${SPOTIFY_PATH_AUTHORIZE:/authorize}
+      token: ${SPOTIFY_PATH_TOKEN:/api/token}
+      me: ${SPOTIFY_PATH_ME:/v1/me}
+      playlists: ${SPOTIFY_PATH_PLAYLISTS:/v1/me/playlists}
+      tracks: ${SPOTIFY_PATH_TRACKS:/v1/me/tracks}
+      albums: ${SPOTIFY_PATH_ALBUMS:/v1/me/albums}
+      users: ${SPOTIFY_PATH_USERS:/v1/users}
+      base-playlists: ${SPOTIFY_PATH_BASE_PLAYLISTS:/v1/playlists}
     max-retries: ${SPOTIFY_API_MAX_RETRIES:3}
     limit:
       playlists: ${SPOTIFY_API_LIMIT_PLAYLISTS:50}

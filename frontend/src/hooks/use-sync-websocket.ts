@@ -1,0 +1,68 @@
+import { useState, useEffect, useRef } from 'react';
+import { Client } from '@stomp/stompjs';
+import SockJS from 'sockjs-client';
+import { API_BASE_URL } from '../lib/api';
+
+export interface SyncTaskDTO {
+    taskId: number;
+    type: 'PLAYLIST' | 'LIKED_SONGS' | 'ALBUM';
+    itemName: string;
+    itemImageUrl: string;
+    status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED' | 'SKIPPED' | 'CANCELLED';
+    totalTracks: number;
+    syncedTracks: number;
+    skippedTracks: number;
+    progressPercent: number;
+    errorMessage: string;
+}
+
+export interface SyncProgressDTO {
+    userSessionId: string;
+    status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
+    totalTasks: number;
+    completedTasks: number;
+    failedTasks: number;
+    overallProgressPercent: number;
+    tasks: SyncTaskDTO[];
+}
+
+export function useSyncWebSocket() {
+    const [progress, setProgress] = useState<SyncProgressDTO | null>(null);
+    const [connected, setConnected] = useState(false);
+    const clientRef = useRef<Client | null>(null);
+
+    useEffect(() => {
+        const token = localStorage.getItem('spotify_session_token');
+        if (!token) return;
+
+        const socketUrl = `${API_BASE_URL}/ws`;
+        
+        const client = new Client({
+            webSocketFactory: () => new SockJS(socketUrl),
+            onConnect: () => {
+                setConnected(true);
+                client.subscribe(`/topic/sync-progress/${token}`, (message) => {
+                    const data = JSON.parse(message.body);
+                    setProgress(data);
+                });
+            },
+            onDisconnect: () => {
+                setConnected(false);
+            },
+            onStompError: (frame) => {
+                console.error('STOMP Error:', frame);
+            }
+        });
+
+        client.activate();
+        clientRef.current = client;
+
+        return () => {
+            if (clientRef.current) {
+                clientRef.current.deactivate();
+            }
+        };
+    }, []);
+
+    return { progress, connected, clearProgress: () => setProgress(null) };
+}

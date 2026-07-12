@@ -36,7 +36,7 @@ public class SpotifyApiService {
 
         try {
             while (url != null && !url.equals("null")) {
-                ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, createAuthHeader(accessToken), String.class);
+                ResponseEntity<String> response = restTemplate.get(url, accessToken, String.class);
                 JsonNode root = objectMapper.readTree(response.getBody());
                 JsonNode items = root.get("items");
                 
@@ -76,7 +76,7 @@ public class SpotifyApiService {
 
         try {
             while (url != null && !url.equals("null")) {
-                ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, createAuthHeader(accessToken), String.class);
+                ResponseEntity<String> response = restTemplate.get(url, accessToken, String.class);
                 JsonNode root = objectMapper.readTree(response.getBody());
                 JsonNode items = root.get("items");
                 
@@ -121,7 +121,7 @@ public class SpotifyApiService {
 
         try {
             while (url != null && !url.equals("null")) {
-                ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, createAuthHeader(accessToken), String.class);
+                ResponseEntity<String> response = restTemplate.get(url, accessToken, String.class);
                 JsonNode root = objectMapper.readTree(response.getBody());
                 JsonNode items = root.get("items");
                 
@@ -154,11 +154,4 @@ public class SpotifyApiService {
         return albums;
     }
     
-    // --- HELPER ---
-    
-    private HttpEntity<Void> createAuthHeader(String accessToken) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(accessToken);
-        return new HttpEntity<>(headers);
-    }
 }

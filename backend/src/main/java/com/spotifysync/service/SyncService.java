@@ -190,8 +190,7 @@ public class SyncService {
             ArrayNode idsNode = body.putArray("ids");
             batch.forEach(idsNode::add);
             
-            HttpEntity<String> request = new HttpEntity<>(body.toString(), headers);
-            restTemplate.exchange("https://api.spotify.com/v1/me/tracks", HttpMethod.PUT, request, String.class);
+            restTemplate.put("https://api.spotify.com/v1/me/tracks", destToken, body.toString(), String.class);
             
             synchronized (session) {
                 task.setSyncedTracks(task.getSyncedTracks() + batch.size());
@@ -201,7 +200,7 @@ public class SyncService {
     }
 
     private void syncPlaylist(SyncTask task, String sourceToken, String destToken, String destUserId, SyncSession session) throws Exception {
-        ResponseEntity<String> plResp = restTemplate.exchange("https://api.spotify.com/v1/playlists/" + task.getSourcePlaylistId(), HttpMethod.GET, createAuthHeader(sourceToken), String.class);
+        ResponseEntity<String> plResp = restTemplate.get("https://api.spotify.com/v1/playlists/" + task.getSourcePlaylistId(), sourceToken, String.class);
         JsonNode plNode = objectMapper.readTree(plResp.getBody());
         String name = plNode.get("name").asText();
         String desc = plNode.has("description") ? plNode.get("description").asText() : "";
@@ -214,16 +213,12 @@ public class SyncService {
             updateSessionState(session);
         }
         
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(destToken);
-        headers.set("Content-Type", "application/json");
         ObjectNode body = objectMapper.createObjectNode();
         body.put("name", name);
         body.put("description", desc + " (Synced)");
         body.put("public", false);
         
-        HttpEntity<String> createReq = new HttpEntity<>(body.toString(), headers);
-        ResponseEntity<String> createResp = restTemplate.exchange("https://api.spotify.com/v1/users/" + destUserId + "/playlists", HttpMethod.POST, createReq, String.class);
+        ResponseEntity<String> createResp = restTemplate.post("https://api.spotify.com/v1/users/" + destUserId + "/playlists", destToken, body.toString(), String.class);
         String targetPlaylistId = objectMapper.readTree(createResp.getBody()).get("id").asText();
         
         synchronized (session) {
@@ -235,7 +230,7 @@ public class SyncService {
         String url = "https://api.spotify.com/v1/playlists/" + task.getSourcePlaylistId() + "/tracks?limit=100";
         
         while (url != null && !url.equals("null")) {
-            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, createAuthHeader(sourceToken), String.class);
+            ResponseEntity<String> response = restTemplate.get(url, sourceToken, String.class);
             JsonNode root = objectMapper.readTree(response.getBody());
             JsonNode items = root.get("items");
             if (items.isArray()) {
@@ -261,8 +256,7 @@ public class SyncService {
             ArrayNode urisNode = addBody.putArray("uris");
             batch.forEach(urisNode::add);
             
-            HttpEntity<String> addReq = new HttpEntity<>(addBody.toString(), headers);
-            restTemplate.exchange("https://api.spotify.com/v1/playlists/" + targetPlaylistId + "/tracks", HttpMethod.POST, addReq, String.class);
+            restTemplate.post("https://api.spotify.com/v1/playlists/" + targetPlaylistId + "/tracks", destToken, addBody.toString(), String.class);
             
             synchronized (session) {
                 task.setSyncedTracks(task.getSyncedTracks() + batch.size());
@@ -272,16 +266,11 @@ public class SyncService {
     }
 
     private void syncAlbum(SyncTask task, String sourceToken, String destToken, SyncSession session) throws Exception {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(destToken);
-        headers.set("Content-Type", "application/json");
-        
         ObjectNode body = objectMapper.createObjectNode();
         ArrayNode idsNode = body.putArray("ids");
         idsNode.add(task.getSourceAlbumId());
         
-        HttpEntity<String> request = new HttpEntity<>(body.toString(), headers);
-        restTemplate.exchange("https://api.spotify.com/v1/me/albums", HttpMethod.PUT, request, String.class);
+        restTemplate.put("https://api.spotify.com/v1/me/albums", destToken, body.toString(), String.class);
         
         synchronized (session) {
             task.setTotalTracks(1);
@@ -291,14 +280,8 @@ public class SyncService {
     }
     
     private String getUserId(String token) throws Exception {
-        ResponseEntity<String> response = restTemplate.exchange("https://api.spotify.com/v1/me", HttpMethod.GET, createAuthHeader(token), String.class);
+        ResponseEntity<String> response = restTemplate.get("https://api.spotify.com/v1/me", token, String.class);
         return objectMapper.readTree(response.getBody()).get("id").asText();
-    }
-    
-    private HttpEntity<Void> createAuthHeader(String token) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(token);
-        return new HttpEntity<>(headers);
     }
 
     private void broadcastProgress(SyncSession session) {

@@ -47,4 +47,25 @@ public class SpotifyApiClient {
     public <T> ResponseEntity<T> postForEntity(String url, HttpEntity<?> requestEntity, Class<T> responseType) {
         return exchange(url, HttpMethod.POST, requestEntity, responseType);
     }
+    
+    // --- Helper Methods to reduce boilerplate ---
+    
+    private org.springframework.http.HttpHeaders createAuthHeaders(String token) {
+        org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+        headers.setBearerAuth(token);
+        headers.set("Content-Type", "application/json");
+        return headers;
+    }
+
+    public <T> ResponseEntity<T> get(String url, String token, Class<T> responseType) {
+        return exchange(url, HttpMethod.GET, new HttpEntity<>(createAuthHeaders(token)), responseType);
+    }
+
+    public <T> ResponseEntity<T> post(String url, String token, Object body, Class<T> responseType) {
+        return exchange(url, HttpMethod.POST, new HttpEntity<>(body, createAuthHeaders(token)), responseType);
+    }
+
+    public <T> ResponseEntity<T> put(String url, String token, Object body, Class<T> responseType) {
+        return exchange(url, HttpMethod.PUT, new HttpEntity<>(body, createAuthHeaders(token)), responseType);
+    }
 }

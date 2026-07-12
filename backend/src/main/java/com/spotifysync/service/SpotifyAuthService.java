@@ -38,7 +38,6 @@ public class SpotifyAuthService {
     private String scopes;
     
     private final SpotifyAccountRepository accountRepository;
-    private final RedisTemplate<String, Object> redisTemplate;
     
     @Value("${spotify.api.host:https://api.spotify.com}")
     private String spotifyApiHost;
@@ -56,7 +55,7 @@ public class SpotifyAuthService {
     private String pathMe;
 
     private final ObjectMapper objectMapper;
-    private final RestTemplate restTemplate;
+    private final SpotifyApiClient restTemplate;
     
     public String generateAuthUrl(AccountType accountType, String userSessionId) {
         String state = accountType.name() + "_" + userSessionId;

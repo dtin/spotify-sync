@@ -53,7 +53,6 @@ public class SpotifyApiClient {
     private org.springframework.http.HttpHeaders createAuthHeaders(String token) {
         org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
         headers.setBearerAuth(token);
-        headers.set("Content-Type", "application/json");
         return headers;
     }
 
@@ -62,10 +61,14 @@ public class SpotifyApiClient {
     }
 
     public <T> ResponseEntity<T> post(String url, String token, Object body, Class<T> responseType) {
-        return exchange(url, HttpMethod.POST, new HttpEntity<>(body, createAuthHeaders(token)), responseType);
+        org.springframework.http.HttpHeaders headers = createAuthHeaders(token);
+        headers.set("Content-Type", "application/json");
+        return exchange(url, HttpMethod.POST, new HttpEntity<>(body, headers), responseType);
     }
 
     public <T> ResponseEntity<T> put(String url, String token, Object body, Class<T> responseType) {
-        return exchange(url, HttpMethod.PUT, new HttpEntity<>(body, createAuthHeaders(token)), responseType);
+        org.springframework.http.HttpHeaders headers = createAuthHeaders(token);
+        headers.set("Content-Type", "application/json");
+        return exchange(url, HttpMethod.PUT, new HttpEntity<>(body, headers), responseType);
     }
 }

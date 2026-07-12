@@ -4,7 +4,8 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { useSelection } from "@/hooks/use-selection";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 
 export interface AlbumResponse {
     spotifyAlbumId: string;
@@ -40,6 +41,14 @@ export function AlbumsTab({ albums, onSelectionChange, loading }: AlbumsTabProps
         return <div className="p-8 text-center text-muted-foreground animate-pulse">Loading albums...</div>;
     }
 
+    const parentRef = useRef<HTMLDivElement>(null);
+    const rowVirtualizer = useVirtualizer({
+        count: albums.length,
+        getScrollElement: () => parentRef.current,
+        estimateSize: () => 64, // 64px height per row
+        overscan: 5,
+    });
+
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between p-4 bg-card rounded-lg border">
@@ -70,31 +79,49 @@ export function AlbumsTab({ albums, onSelectionChange, loading }: AlbumsTabProps
             <Separator />
             
             <div className="rounded-md border">
-                <ScrollArea className="h-[400px]">
-                    <div className="p-2 space-y-1">
-                        {albums.map((album) => (
-                            <div key={album.spotifyAlbumId} className="flex items-center gap-4 p-2 hover:bg-muted/50 rounded-md transition-colors cursor-pointer" onClick={() => toggleItem(album.spotifyAlbumId)}>
-                                <Checkbox 
-                                    checked={selectedIds.includes(album.spotifyAlbumId)} 
-                                    onCheckedChange={() => toggleItem(album.spotifyAlbumId)}
-                                    onClick={(e) => e.stopPropagation()}
-                                />
-                                <img src={album.imageUrl || "/placeholder.svg"} alt={album.name} className="w-12 h-12 rounded object-cover shadow-sm" />
-                                <div className="flex-1 min-w-0">
-                                    <p className="font-medium text-foreground truncate">{album.name}</p>
-                                    <p className="text-sm text-muted-foreground truncate">
-                                        {album.artistName} • {album.totalTracks} tracks
-                                    </p>
+                <ScrollArea viewportRef={parentRef} className="h-[400px]">
+                    <div
+                        className="w-full relative"
+                        style={{ height: `${rowVirtualizer.getTotalSize()}px` }}
+                    >
+                        {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                            const album = albums[virtualRow.index];
+                            return (
+                                <div 
+                                    key={album.spotifyAlbumId}
+                                    style={{
+                                        position: 'absolute',
+                                        top: 0,
+                                        left: 0,
+                                        width: '100%',
+                                        height: `${virtualRow.size}px`,
+                                        transform: `translateY(${virtualRow.start}px)`,
+                                    }}
+                                    className="flex items-center gap-4 p-2 hover:bg-muted/50 transition-colors cursor-pointer border-b border-transparent hover:border-muted"
+                                    onClick={() => toggleItem(album.spotifyAlbumId)}
+                                >
+                                    <Checkbox 
+                                        checked={selectedIds.includes(album.spotifyAlbumId)} 
+                                        onCheckedChange={() => toggleItem(album.spotifyAlbumId)}
+                                        onClick={(e) => e.stopPropagation()}
+                                    />
+                                    <img src={album.imageUrl || "/placeholder.svg"} alt={album.name} className="w-12 h-12 rounded object-cover shadow-sm" />
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-medium text-foreground truncate">{album.name}</p>
+                                        <p className="text-sm text-muted-foreground truncate">
+                                            {album.artistName} • {album.totalTracks} tracks
+                                        </p>
+                                    </div>
+                                    <div className="w-24 text-right pr-2">
+                                        {album.synced ? (
+                                            <Badge variant="secondary" className="bg-primary/20 text-primary hover:bg-primary/30">Synced</Badge>
+                                        ) : (
+                                            <span className="text-xs text-muted-foreground">—</span>
+                                        )}
+                                    </div>
                                 </div>
-                                <div className="w-24 text-right pr-2">
-                                    {album.synced ? (
-                                        <Badge variant="secondary" className="bg-primary/20 text-primary hover:bg-primary/30">Synced</Badge>
-                                    ) : (
-                                        <span className="text-xs text-muted-foreground">—</span>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                         {albums.length === 0 && (
                             <div className="text-center py-12 text-muted-foreground">
                                 No saved albums found.

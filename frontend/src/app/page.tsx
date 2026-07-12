@@ -188,8 +188,8 @@ function HomeContent() {
                 )}
             </main>
 
-            <footer className="w-full text-center py-6 text-sm text-muted-foreground mt-auto">
-                from Tin Dam with love <Heart className="inline-block w-4 h-4 text-red-500 mx-1 fill-current" />
+            <footer className="w-full flex items-center justify-center py-6 text-sm text-muted-foreground mt-auto">
+                From Tin Dam with love <Heart className="w-4 h-4 text-red-500 mx-1 fill-current" />
             </footer>
         </div>
     );

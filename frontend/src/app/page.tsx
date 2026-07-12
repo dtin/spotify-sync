@@ -123,7 +123,7 @@ function HomeContent() {
                 {/* Content Section */}
                 {status?.source.connected && (
                     <div className="space-y-6">
-                        <Tabs defaultValue="liked-songs" className="w-full">
+                        <Tabs defaultValue="liked-songs" className="w-full flex flex-col">
                             <TabsList className="grid w-full grid-cols-3 max-w-md bg-muted/50 p-1">
                                 <TabsTrigger value="liked-songs" className="flex items-center gap-2">
                                     <Heart className="w-4 h-4" /> Liked Songs

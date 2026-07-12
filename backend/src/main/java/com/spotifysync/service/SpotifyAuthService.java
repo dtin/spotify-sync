@@ -38,7 +38,7 @@ public class SpotifyAuthService {
     private String scopes;
     
     private final SpotifyAccountRepository accountRepository;
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final SpotifyApiClient restTemplate;
     private final ObjectMapper objectMapper;
     
     public String generateAuthUrl(AccountType accountType, String userSessionId) {

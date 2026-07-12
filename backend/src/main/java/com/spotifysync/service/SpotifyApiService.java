@@ -24,7 +24,7 @@ import java.util.List;
 public class SpotifyApiService {
 
     private final SpotifyAuthService authService;
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final SpotifyApiClient restTemplate;
     private final ObjectMapper objectMapper;
 
     // --- PLAYLISTS ---

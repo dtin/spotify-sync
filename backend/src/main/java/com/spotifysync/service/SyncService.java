@@ -39,7 +39,7 @@ public class SyncService {
     private final SpotifyApiService apiService;
     private final SyncProgressService progressService;
     private final SyncSessionRepository sessionRepository;
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final SpotifyApiClient restTemplate;
     private final ObjectMapper objectMapper;
 
     @Async("syncTaskExecutor")

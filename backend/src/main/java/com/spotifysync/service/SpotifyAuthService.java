@@ -116,6 +116,13 @@ public class SpotifyAuthService {
                 profileImageUrl = profile.get("images").get(0).get("url").asText();
             }
             
+            // Check if the other account is already connected with the same spotifyId
+            AccountType otherType = (accountType == AccountType.SOURCE) ? AccountType.DESTINATION : AccountType.SOURCE;
+            Optional<SpotifyAccount> otherAccountOpt = accountRepository.findByUserSessionIdAndAccountType(userSessionId, otherType);
+            if (otherAccountOpt.isPresent() && otherAccountOpt.get().getSpotifyUserId().equals(spotifyUserId)) {
+                throw new SpotifyApiException("same_account");
+            }
+            
             // Save to DB
             Optional<SpotifyAccount> existingOpt = accountRepository.findByUserSessionIdAndAccountType(userSessionId, accountType);
             SpotifyAccount account = existingOpt.orElse(new SpotifyAccount());

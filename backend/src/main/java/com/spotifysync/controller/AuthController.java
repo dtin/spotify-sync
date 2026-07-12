@@ -28,9 +28,16 @@ public class AuthController {
 
     @GetMapping("/callback")
     public RedirectView callback(@RequestParam String code, @RequestParam String state) {
-        String userSessionId = authService.handleCallback(code, state);
-        // Redirect back to frontend with the session token
-        return new RedirectView(frontendUrl + "?token=" + userSessionId);
+        try {
+            String userSessionId = authService.handleCallback(code, state);
+            // Redirect back to frontend with the session token
+            return new RedirectView(frontendUrl + "?token=" + userSessionId);
+        } catch (com.spotifysync.exception.SpotifyApiException e) {
+            if ("same_account".equals(e.getMessage())) {
+                return new RedirectView(frontendUrl + "?error=same_account");
+            }
+            return new RedirectView(frontendUrl + "?error=auth_failed");
+        }
     }
 
     @GetMapping("/status")

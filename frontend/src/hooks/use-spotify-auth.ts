@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { fetchWithAuth, API_BASE_URL } from '../lib/api';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { toast } from 'sonner';
 
 export interface AccountInfo {
     spotifyId: string;
@@ -24,8 +25,17 @@ export function useSpotifyAuth() {
     useEffect(() => {
         // Check for token in URL after callback
         const tokenFromUrl = searchParams.get('token');
+        const errorFromUrl = searchParams.get('error');
+
         if (tokenFromUrl) {
             localStorage.setItem('spotify_session_token', tokenFromUrl);
+            router.replace('/'); // Clean URL
+        } else if (errorFromUrl) {
+            if (errorFromUrl === 'same_account') {
+                toast.error("Source and destination cannot be the same account.");
+            } else {
+                toast.error("Authentication failed.");
+            }
             router.replace('/'); // Clean URL
         }
 

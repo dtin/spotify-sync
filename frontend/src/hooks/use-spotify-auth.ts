@@ -52,11 +52,21 @@ export function useSpotifyAuth() {
     };
 
     const logout = async (accountType: 'SOURCE' | 'DESTINATION') => {
+        // Optimistically update the UI state immediately regardless of backend response
+        setStatus(prev => {
+            if (!prev) return prev;
+            const key = accountType.toLowerCase() as 'source' | 'destination';
+            return {
+                ...prev,
+                [key]: { connected: false } as AccountInfo
+            };
+        });
+
         try {
-            await fetchWithAuth(`/api/auth/logout/${accountType}`, { method: 'POST' });
-            await checkStatus();
+            await fetchWithAuth(`/api/auth/logout/${accountType}`, { method: 'POST' }).catch(() => {});
+            // We don't need to await checkStatus() because we already updated the state locally
         } catch (error) {
-            console.error("Failed to logout", error);
+            console.error("Failed to logout from backend", error);
         }
     };
 

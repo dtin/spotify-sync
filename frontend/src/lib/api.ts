@@ -16,6 +16,10 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}) {
     if (!response.ok) {
         throw new Error(`API Error: ${response.statusText}`);
     }
+    const text = await response.text();
+    if (!text) {
+        return null;
+    }
     
-    return response.json();
+    return JSON.parse(text);
 }

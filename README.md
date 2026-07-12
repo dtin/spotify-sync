@@ -60,5 +60,24 @@ A full-stack web application that allows users to easily synchronize their **Lik
    ```
    The frontend will start on `http://localhost:3000`.
 
+## ⚙️ Environment Variables
+
+### Backend (`backend/src/main/resources/application.yml` or OS Env Vars)
+You can configure the application's behavior using the following environment variables:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `PORT` | The port the Spring Boot server runs on | `8080` |
+| `FRONTEND_URL` | URL of the frontend application | `http://localhost:3000` |
+| `SENTRY_DSN` | Your Sentry DSN for error tracking | *(empty)* |
+| `SYNC_CORE_POOL_SIZE` | Core number of threads for the sync executor | `2` |
+| `SYNC_MAX_POOL_SIZE` | Maximum number of threads for the sync executor | `5` |
+| `SYNC_QUEUE_CAPACITY` | Max queued tasks before thread pool rejection | `50` |
+
+### Frontend (`frontend/.env` or `.env.local`)
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `NEXT_PUBLIC_API_URL` | URL of the backend API | `http://localhost:8080` |
+
 ## 📄 License
 This project is for educational and personal use.

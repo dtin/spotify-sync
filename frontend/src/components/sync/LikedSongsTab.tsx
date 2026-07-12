@@ -38,10 +38,6 @@ export function LikedSongsTab({ tracks, onSelectionChange, loading }: LikedSongs
         onSelectionChange(selectedIds);
     }, [selectedIds, onSelectionChange]);
 
-    if (loading) {
-        return <div className="p-8 text-center text-muted-foreground animate-pulse">Loading liked songs...</div>;
-    }
-
     const parentRef = useRef<HTMLDivElement>(null);
     const rowVirtualizer = useVirtualizer({
         count: tracks.length,
@@ -49,6 +45,10 @@ export function LikedSongsTab({ tracks, onSelectionChange, loading }: LikedSongs
         estimateSize: () => 56, // 56px height per row
         overscan: 5,
     });
+
+    if (loading) {
+        return <div className="p-8 text-center text-muted-foreground animate-pulse">Loading liked songs...</div>;
+    }
 
     return (
         <div className="space-y-4">

@@ -37,10 +37,6 @@ export function AlbumsTab({ albums, onSelectionChange, loading }: AlbumsTabProps
         onSelectionChange(selectedIds);
     }, [selectedIds, onSelectionChange]);
 
-    if (loading) {
-        return <div className="p-8 text-center text-muted-foreground animate-pulse">Loading albums...</div>;
-    }
-
     const parentRef = useRef<HTMLDivElement>(null);
     const rowVirtualizer = useVirtualizer({
         count: albums.length,
@@ -48,6 +44,10 @@ export function AlbumsTab({ albums, onSelectionChange, loading }: AlbumsTabProps
         estimateSize: () => 64, // 64px height per row
         overscan: 5,
     });
+
+    if (loading) {
+        return <div className="p-8 text-center text-muted-foreground animate-pulse">Loading albums...</div>;
+    }
 
     return (
         <div className="space-y-4">

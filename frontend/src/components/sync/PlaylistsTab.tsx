@@ -38,10 +38,6 @@ export function PlaylistsTab({ playlists, onSelectionChange, loading }: Playlist
         onSelectionChange(selectedIds);
     }, [selectedIds, onSelectionChange]);
 
-    if (loading) {
-        return <div className="p-8 text-center text-muted-foreground animate-pulse">Loading playlists...</div>;
-    }
-
     const parentRef = useRef<HTMLDivElement>(null);
     const rowVirtualizer = useVirtualizer({
         count: playlists.length,
@@ -49,6 +45,10 @@ export function PlaylistsTab({ playlists, onSelectionChange, loading }: Playlist
         estimateSize: () => 64, // 64px height per row
         overscan: 5,
     });
+
+    if (loading) {
+        return <div className="p-8 text-center text-muted-foreground animate-pulse">Loading playlists...</div>;
+    }
 
     return (
         <div className="space-y-4">

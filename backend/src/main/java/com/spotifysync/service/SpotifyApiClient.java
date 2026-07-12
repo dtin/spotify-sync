@@ -2,6 +2,7 @@ package com.spotifysync.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
@@ -50,8 +51,8 @@ public class SpotifyApiClient {
     
     // --- Helper Methods to reduce boilerplate ---
     
-    private org.springframework.http.HttpHeaders createAuthHeaders(String token) {
-        org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+    private HttpHeaders createAuthHeaders(String token) {
+        HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(token);
         return headers;
     }
@@ -61,13 +62,13 @@ public class SpotifyApiClient {
     }
 
     public <T> ResponseEntity<T> post(String url, String token, Object body, Class<T> responseType) {
-        org.springframework.http.HttpHeaders headers = createAuthHeaders(token);
+        HttpHeaders headers = createAuthHeaders(token);
         headers.set("Content-Type", "application/json");
         return exchange(url, HttpMethod.POST, new HttpEntity<>(body, headers), responseType);
     }
 
     public <T> ResponseEntity<T> put(String url, String token, Object body, Class<T> responseType) {
-        org.springframework.http.HttpHeaders headers = createAuthHeaders(token);
+        HttpHeaders headers = createAuthHeaders(token);
         headers.set("Content-Type", "application/json");
         return exchange(url, HttpMethod.PUT, new HttpEntity<>(body, headers), responseType);
     }

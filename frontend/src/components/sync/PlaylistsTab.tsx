@@ -34,11 +34,6 @@ export function PlaylistsTab({ playlists, onSelectionChange, loading }: Playlist
         toggleItem 
     } = useSelection(playlists, 'spotifyPlaylistId');
 
-    const totalSelectedTracks = playlists
-        .filter(p => selectedIds.includes(p.spotifyPlaylistId))
-        .reduce((sum, p) => sum + p.totalTracks, 0);
-    const totalTracks = playlists.reduce((sum, p) => sum + p.totalTracks, 0);
-
     // Notify parent when selection changes
     useEffect(() => {
         onSelectionChange(selectedIds);
@@ -81,7 +76,7 @@ export function PlaylistsTab({ playlists, onSelectionChange, loading }: Playlist
                                 Select All Playlists
                             </Label>
                             <p className="text-sm text-muted-foreground">
-                                {selectedIds.length} of {playlists.length} playlists selected ({totalSelectedTracks} of {totalTracks} tracks)
+                                {selectedIds.length} of {playlists.length} playlists selected
                             </p>
                         </div>
                     </div>

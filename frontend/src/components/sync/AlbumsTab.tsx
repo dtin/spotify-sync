@@ -38,11 +38,6 @@ export function AlbumsTab({ albums, onSelectionChange, loading }: AlbumsTabProps
         onSelectionChange(selectedIds);
     }, [selectedIds, onSelectionChange]);
 
-    const totalSelectedTracks = albums
-        .filter(a => selectedIds.includes(a.spotifyAlbumId))
-        .reduce((sum, a) => sum + a.totalTracks, 0);
-    const totalTracks = albums.reduce((sum, a) => sum + a.totalTracks, 0);
-
     const parentRef = useRef<HTMLDivElement>(null);
     const rowVirtualizer = useVirtualizer({
         count: albums.length,
@@ -80,7 +75,7 @@ export function AlbumsTab({ albums, onSelectionChange, loading }: AlbumsTabProps
                                 Select All Albums
                             </Label>
                             <p className="text-sm text-muted-foreground">
-                                {selectedIds.length} of {albums.length} albums selected ({totalSelectedTracks} of {totalTracks} tracks)
+                                {selectedIds.length} of {albums.length} albums selected
                             </p>
                         </div>
                     </div>

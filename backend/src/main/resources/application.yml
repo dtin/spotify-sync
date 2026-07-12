@@ -29,6 +29,7 @@ spotify:
   scopes: playlist-read-private,playlist-read-collaborative,playlist-modify-public,playlist-modify-private,user-library-read,user-library-modify
   frontend-url: ${FRONTEND_URL:http://localhost:3000}
   api:
+    host: ${SPOTIFY_API_HOST:https://api.spotify.com}
     max-retries: ${SPOTIFY_API_MAX_RETRIES:3}
     limit:
       playlists: ${SPOTIFY_API_LIMIT_PLAYLISTS:50}

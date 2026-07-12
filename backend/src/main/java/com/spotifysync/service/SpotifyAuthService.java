@@ -38,8 +38,12 @@ public class SpotifyAuthService {
     private String scopes;
     
     private final SpotifyAccountRepository accountRepository;
-    private final SpotifyApiClient restTemplate;
+    private final RedisTemplate<String, Object> redisTemplate;
+    
+    @Value("${spotify.api.host:https://api.spotify.com}")
+    private String spotifyApiHost;
     private final ObjectMapper objectMapper;
+    private final SpotifyApiClient restTemplate;
     
     public String generateAuthUrl(AccountType accountType, String userSessionId) {
         String state = accountType.name() + "_" + userSessionId;
@@ -120,8 +124,9 @@ public class SpotifyAuthService {
     private JsonNode getUserProfile(String accessToken) throws Exception {
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(accessToken);
-        HttpEntity<Void> request = new HttpEntity<>(headers);
-        ResponseEntity<String> response = restTemplate.exchange("https://api.spotify.com/v1/me", HttpMethod.GET, request, String.class);
+        HttpEntity<String> request = new HttpEntity<>(headers);
+        String url = new StringBuilder(spotifyApiHost).append("/v1/me").toString();
+        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, request, String.class);
         return objectMapper.readTree(response.getBody());
     }
     

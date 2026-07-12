@@ -7,6 +7,7 @@ import com.spotifysync.dto.response.PlaylistResponse;
 import com.spotifysync.dto.response.TrackResponse;
 import com.spotifysync.enums.AccountType;
 import com.spotifysync.exception.SpotifyApiException;
+import com.spotifysync.util.SpotifyApiUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -16,10 +17,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +27,10 @@ public class SpotifyApiService {
     private final SpotifyAuthService authService;
     private final SpotifyApiClient restTemplate;
     private final ObjectMapper objectMapper;
+    private final SpotifyApiUtils spotifyApiUtils;
+
+    @Value("${spotify.api.host:https://api.spotify.com}")
+    private String spotifyApiHost;
 
     @Value("${spotify.api.limit.playlists:50}")
     private int playlistLimit;
@@ -41,8 +44,8 @@ public class SpotifyApiService {
     // --- PLAYLISTS ---
 
     public List<PlaylistResponse> getUserPlaylists(String userSessionId, AccountType accountType) {
-        String url = "https://api.spotify.com/v1/me/playlists?limit=" + playlistLimit;
-        return fetchAllItems(userSessionId, accountType, url, "Failed to fetch playlists", item -> {
+        String url = new StringBuilder(spotifyApiHost).append("/v1/me/playlists?limit=").append(playlistLimit).toString();
+        return spotifyApiUtils.fetchAllItems(userSessionId, accountType, url, "Failed to fetch playlists", item -> {
             PlaylistResponse pr = new PlaylistResponse();
             pr.setSpotifyPlaylistId(item.get("id").asText());
             pr.setName(item.get("name").asText());
@@ -62,8 +65,8 @@ public class SpotifyApiService {
     // --- LIKED SONGS ---
 
     public List<TrackResponse> getSavedTracks(String userSessionId, AccountType accountType) {
-        String url = "https://api.spotify.com/v1/me/tracks?limit=" + trackLimit;
-        return fetchAllItems(userSessionId, accountType, url, "Failed to fetch liked songs", item -> {
+        String url = new StringBuilder(spotifyApiHost).append("/v1/me/tracks?limit=").append(trackLimit).toString();
+        return spotifyApiUtils.fetchAllItems(userSessionId, accountType, url, "Failed to fetch liked songs", item -> {
             JsonNode trackNode = item.get("track");
             if (trackNode == null || trackNode.isNull()) return null;
             
@@ -91,8 +94,8 @@ public class SpotifyApiService {
     // --- SAVED ALBUMS ---
 
     public List<AlbumResponse> getSavedAlbums(String userSessionId, AccountType accountType) {
-        String url = "https://api.spotify.com/v1/me/albums?limit=" + albumLimit;
-        return fetchAllItems(userSessionId, accountType, url, "Failed to fetch saved albums", item -> {
+        String url = new StringBuilder(spotifyApiHost).append("/v1/me/albums?limit=").append(albumLimit).toString();
+        return spotifyApiUtils.fetchAllItems(userSessionId, accountType, url, "Failed to fetch saved albums", item -> {
             JsonNode albumNode = item.get("album");
             if (albumNode == null || albumNode.isNull()) return null;
             
@@ -113,35 +116,4 @@ public class SpotifyApiService {
             return ar;
         });
     }
-
-    // --- HELPER METHODS ---
-
-    private <T> List<T> fetchAllItems(String userSessionId, AccountType accountType, String initialUrl, String errorMessage, Function<JsonNode, T> mapper) {
-        String accessToken = authService.getValidAccessToken(userSessionId, accountType);
-        List<T> results = new ArrayList<>();
-        String url = initialUrl;
-
-        try {
-            while (url != null && !url.equals("null")) {
-                ResponseEntity<String> response = restTemplate.get(url, accessToken, String.class);
-                JsonNode root = objectMapper.readTree(response.getBody());
-                JsonNode items = root.get("items");
-                
-                if (items != null && items.isArray()) {
-                    for (JsonNode item : items) {
-                        if (item == null || item.isNull()) continue;
-                        T mappedObj = mapper.apply(item);
-                        if (mappedObj != null) {
-                            results.add(mappedObj);
-                        }
-                    }
-                }
-                url = root.has("next") && !root.get("next").isNull() ? root.get("next").asText() : null;
-            }
-        } catch (Exception e) {
-            throw new SpotifyApiException(errorMessage, e);
-        }
-        return results;
-    }
-    
 }

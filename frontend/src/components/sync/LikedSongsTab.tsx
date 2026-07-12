@@ -1,9 +1,11 @@
-import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Heart } from "lucide-react";
+import { useSelection } from "@/hooks/use-selection";
+import { useEffect } from "react";
 
 export interface TrackResponse {
     trackId: string;
@@ -17,12 +19,24 @@ export interface TrackResponse {
 
 interface LikedSongsTabProps {
     tracks: TrackResponse[];
-    syncEnabled: boolean;
-    onToggleSync: (enabled: boolean) => void;
+    onSelectionChange: (selectedIds: string[]) => void;
     loading: boolean;
 }
 
-export function LikedSongsTab({ tracks, syncEnabled, onToggleSync, loading }: LikedSongsTabProps) {
+export function LikedSongsTab({ tracks, onSelectionChange, loading }: LikedSongsTabProps) {
+    const { 
+        selectedIds, 
+        isAllSelected, 
+        isIndeterminate, 
+        toggleAll, 
+        toggleItem 
+    } = useSelection(tracks, 'trackId');
+
+    // Notify parent when selection changes
+    useEffect(() => {
+        onSelectionChange(selectedIds);
+    }, [selectedIds, onSelectionChange]);
+
     if (loading) {
         return <div className="p-8 text-center text-muted-foreground animate-pulse">Loading liked songs...</div>;
     }
@@ -31,46 +45,61 @@ export function LikedSongsTab({ tracks, syncEnabled, onToggleSync, loading }: Li
         <div className="space-y-4">
             <div className="flex items-center justify-between p-4 bg-card rounded-lg border">
                 <div className="flex items-center gap-3">
-                    <div className="bg-primary/20 p-2 rounded-full text-primary">
-                        <Heart className="w-5 h-5 fill-current" />
-                    </div>
-                    <div>
-                        <Label htmlFor="sync-liked-songs" className="text-base font-semibold cursor-pointer">
-                            Sync all Liked Songs
-                        </Label>
-                        <p className="text-sm text-muted-foreground">
-                            {tracks.length} tracks will be copied (Oldest to Newest)
-                        </p>
+                    <Checkbox 
+                        id="select-all-liked" 
+                        checked={isAllSelected} 
+                        className={isIndeterminate ? "data-[state=unchecked]:bg-primary data-[state=unchecked]:text-primary-foreground" : ""}
+                        onClick={(e) => {
+                            if (isIndeterminate) {
+                                e.preventDefault();
+                                toggleAll();
+                            }
+                        }}
+                        onCheckedChange={toggleAll}
+                    />
+                    <div className="flex items-center gap-2">
+                        <div className="bg-primary/20 p-1.5 rounded-full text-primary hidden sm:block">
+                            <Heart className="w-4 h-4 fill-current" />
+                        </div>
+                        <div>
+                            <Label htmlFor="select-all-liked" className="text-base font-semibold cursor-pointer">
+                                Select All Liked Songs
+                            </Label>
+                            <p className="text-sm text-muted-foreground">
+                                {selectedIds.length} tracks will be copied (Oldest to Newest)
+                            </p>
+                        </div>
                     </div>
                 </div>
-                <Switch 
-                    id="sync-liked-songs" 
-                    checked={syncEnabled} 
-                    onCheckedChange={onToggleSync} 
-                />
             </div>
             
             <Separator />
             
             <div className="rounded-md border">
-                <div className="bg-muted/50 p-3 grid grid-cols-[auto_1fr_auto] gap-4 items-center text-sm font-medium text-muted-foreground border-b">
+                <div className="bg-muted/50 p-3 flex gap-4 items-center text-sm font-medium text-muted-foreground border-b pr-8">
+                    <div className="w-4"></div>
                     <div className="w-10 text-center">#</div>
-                    <div>Title</div>
-                    <div className="w-24 text-center">Status</div>
+                    <div className="flex-1">Title</div>
+                    <div className="w-24 text-right">Status</div>
                 </div>
-                <ScrollArea className="h-[400px]">
+                <ScrollArea type="always" className="h-[400px]">
                     <div className="p-2 space-y-1">
                         {tracks.map((track, i) => (
-                            <div key={track.trackId} className="grid grid-cols-[auto_1fr_auto] gap-4 items-center p-2 hover:bg-muted/50 rounded-md group transition-colors">
+                            <div key={track.trackId} className="flex gap-4 items-center p-2 hover:bg-muted/50 rounded-md group transition-colors cursor-pointer" onClick={() => toggleItem(track.trackId)}>
+                                <Checkbox 
+                                    checked={selectedIds.includes(track.trackId)} 
+                                    onCheckedChange={() => toggleItem(track.trackId)}
+                                    onClick={(e) => e.stopPropagation()}
+                                />
                                 <div className="w-10 text-center text-sm text-muted-foreground">{i + 1}</div>
-                                <div className="flex items-center gap-3 overflow-hidden">
+                                <div className="flex-1 flex items-center gap-3 overflow-hidden">
                                     <img src={track.albumImageUrl || "/placeholder.svg"} alt={track.albumName} className="w-10 h-10 rounded object-cover shadow-sm" />
                                     <div className="truncate">
                                         <p className="font-medium truncate text-foreground">{track.name}</p>
                                         <p className="text-sm text-muted-foreground truncate">{track.artistName} • {track.albumName}</p>
                                     </div>
                                 </div>
-                                <div className="w-24 flex justify-center">
+                                <div className="w-24 flex justify-end pr-2">
                                     {track.synced ? (
                                         <Badge variant="secondary" className="bg-primary/20 text-primary hover:bg-primary/30">Synced</Badge>
                                     ) : (

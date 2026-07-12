@@ -51,7 +51,7 @@ public class SyncService {
         
         List<SyncTask> tasks = new ArrayList<>();
         
-        if (request.isSyncLikedSongs()) {
+        if (request.getLikedSongIds() != null && !request.getLikedSongIds().isEmpty()) {
             SyncTask t = new SyncTask();
             t.setSyncSession(session);
             t.setType(SyncTaskType.LIKED_SONGS);
@@ -115,7 +115,7 @@ public class SyncService {
             
             try {
                 if (task.getType() == SyncTaskType.LIKED_SONGS) {
-                    syncLikedSongs(task, sourceToken, destToken, session);
+                    syncLikedSongs(task, destToken, session, request.getLikedSongIds());
                 } else if (task.getType() == SyncTaskType.PLAYLIST) {
                     syncPlaylist(task, sourceToken, destToken, destUserId, session);
                 } else if (task.getType() == SyncTaskType.ALBUM) {
@@ -140,32 +140,18 @@ public class SyncService {
         broadcastProgress(session);
     }
 
-    private void syncLikedSongs(SyncTask task, String sourceToken, String destToken, SyncSession session) throws Exception {
-        // Fetch all liked songs from source
-        List<String> trackIds = new ArrayList<>();
-        String url = "https://api.spotify.com/v1/me/tracks?limit=50";
+    private void syncLikedSongs(SyncTask task, String destToken, SyncSession session, List<String> trackIds) throws Exception {
+        // Use the track IDs provided by the frontend (which are in newest-to-oldest order)
+        // Reverse them so we sync oldest first
+        List<String> idsToSync = new ArrayList<>(trackIds);
+        Collections.reverse(idsToSync);
         
-        while (url != null && !url.equals("null")) {
-            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, createAuthHeader(sourceToken), String.class);
-            JsonNode root = objectMapper.readTree(response.getBody());
-            JsonNode items = root.get("items");
-            if (items.isArray()) {
-                for (JsonNode item : items) {
-                    trackIds.add(item.get("track").get("id").asText());
-                }
-            }
-            url = root.has("next") && !root.get("next").isNull() ? root.get("next").asText() : null;
-        }
-        
-        task.setTotalTracks(trackIds.size());
-        
-        // Reverse to sync oldest first (so newest ends up on top)
-        Collections.reverse(trackIds);
+        task.setTotalTracks(idsToSync.size());
         
         // Save to destination in batches of 50
-        for (int i = 0; i < trackIds.size(); i += 50) {
-            int end = Math.min(i + 50, trackIds.size());
-            List<String> batch = trackIds.subList(i, end);
+        for (int i = 0; i < idsToSync.size(); i += 50) {
+            int end = Math.min(i + 50, idsToSync.size());
+            List<String> batch = idsToSync.subList(i, end);
             
             HttpHeaders headers = new HttpHeaders();
             headers.setBearerAuth(destToken);

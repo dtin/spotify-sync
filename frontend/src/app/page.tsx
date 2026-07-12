@@ -25,7 +25,7 @@ function HomeContent() {
     const [dataLoading, setDataLoading] = useState(false);
 
     // Sync Selection State
-    const [syncLikedSongs, setSyncLikedSongs] = useState(false);
+    const [selectedLikedSongs, setSelectedLikedSongs] = useState<string[]>([]);
     const [selectedPlaylists, setSelectedPlaylists] = useState<string[]>([]);
     const [selectedAlbums, setSelectedAlbums] = useState<string[]>([]);
     const [isSyncing, setIsSyncing] = useState(false);
@@ -71,7 +71,7 @@ function HomeContent() {
             return;
         }
 
-        if (!syncLikedSongs && selectedPlaylists.length === 0 && selectedAlbums.length === 0) {
+        if (selectedLikedSongs.length === 0 && selectedPlaylists.length === 0 && selectedAlbums.length === 0) {
             toast.warning("Please select at least one item to sync");
             return;
         }
@@ -82,7 +82,7 @@ function HomeContent() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    syncLikedSongs,
+                    likedSongIds: selectedLikedSongs,
                     playlistIds: selectedPlaylists,
                     albumIds: selectedAlbums
                 })
@@ -97,7 +97,7 @@ function HomeContent() {
     if (authLoading) return <div className="flex h-screen items-center justify-center">Loading...</div>;
 
     const canSync = status?.source.connected && status?.destination.connected;
-    const totalSelectedItems = (syncLikedSongs ? 1 : 0) + selectedPlaylists.length + selectedAlbums.length;
+    const totalSelectedItems = (selectedLikedSongs.length > 0 ? 1 : 0) + selectedPlaylists.length + selectedAlbums.length;
 
     return (
         <div className="min-h-screen bg-background text-foreground pb-20">
@@ -140,8 +140,7 @@ function HomeContent() {
                                 <TabsContent value="liked-songs" className="m-0 border-0 p-0">
                                     <LikedSongsTab 
                                         tracks={likedSongs} 
-                                        syncEnabled={syncLikedSongs} 
-                                        onToggleSync={setSyncLikedSongs} 
+                                        onSelectionChange={setSelectedLikedSongs} 
                                         loading={dataLoading} 
                                     />
                                 </TabsContent>

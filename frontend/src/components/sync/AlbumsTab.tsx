@@ -70,7 +70,7 @@ export function AlbumsTab({ albums, onSelectionChange, loading }: AlbumsTabProps
             <Separator />
             
             <div className="rounded-md border">
-                <ScrollArea className="h-[400px]">
+                <ScrollArea type="always" className="h-[400px]">
                     <div className="p-2 space-y-1">
                         {albums.map((album) => (
                             <div key={album.spotifyAlbumId} className="flex items-center gap-4 p-2 hover:bg-muted/50 rounded-md transition-colors cursor-pointer" onClick={() => toggleItem(album.spotifyAlbumId)}>

@@ -38,6 +38,12 @@ public class GlobalExceptionHandler {
     
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGenericException(Exception ex) {
+        String exName = ex.getClass().getName();
+        if (exName.contains("ClientAbortException") || exName.contains("AsyncRequestNotUsableException")) {
+            log.warn("Client aborted connection: {}", ex.getMessage());
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+        }
+
         log.error("Unhandled exception: {}", ex.getMessage(), ex);
         Sentry.captureException(ex);
         Map<String, String> body = new HashMap<>();

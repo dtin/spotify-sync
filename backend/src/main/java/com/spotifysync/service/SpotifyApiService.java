@@ -57,8 +57,8 @@ public class SpotifyApiService {
                         pr.setSpotifyPlaylistId(item.get("id").asText());
                         pr.setName(item.get("name").asText());
                         pr.setDescription(item.has("description") ? item.get("description").asText() : "");
-                        pr.setOwnerName(item.get("owner").get("display_name").asText());
-                        pr.setTotalTracks(item.get("tracks").get("total").asInt());
+                        pr.setOwnerName(item.has("owner") && !item.get("owner").isNull() && item.get("owner").has("display_name") && !item.get("owner").get("display_name").isNull() ? item.get("owner").get("display_name").asText() : "Unknown");
+                        pr.setTotalTracks(item.has("tracks") && !item.get("tracks").isNull() && item.get("tracks").has("total") && !item.get("tracks").get("total").isNull() ? item.get("tracks").get("total").asInt() : 0);
                         pr.setPublic(item.has("public") && !item.get("public").isNull() ? item.get("public").asBoolean() : false);
                         
                         if (item.has("images") && item.get("images").isArray() && item.get("images").size() > 0) {

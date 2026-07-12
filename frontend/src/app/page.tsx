@@ -100,10 +100,10 @@ function HomeContent() {
     const totalSelectedItems = (selectedLikedSongs.length > 0 ? 1 : 0) + selectedPlaylists.length + selectedAlbums.length;
 
     return (
-        <div className="min-h-screen bg-background text-foreground pb-20">
+        <div className="min-h-screen bg-background text-foreground pb-10 flex flex-col">
             <Header />
             
-            <main className="container max-w-6xl mx-auto px-4 py-8 space-y-8">
+            <main className="container max-w-6xl mx-auto px-4 py-8 space-y-8 flex-grow">
                 {/* Accounts Section */}
                 <div className="grid md:grid-cols-2 gap-6">
                     <AccountCard 
@@ -187,6 +187,10 @@ function HomeContent() {
                     </div>
                 )}
             </main>
+
+            <footer className="w-full text-center py-6 text-sm text-muted-foreground mt-auto">
+                from Tin Dam with love <Heart className="inline-block w-4 h-4 text-red-500 mx-1 fill-current" />
+            </footer>
         </div>
     );
 }

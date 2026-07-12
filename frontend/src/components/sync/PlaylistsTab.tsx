@@ -3,6 +3,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
+import { ListMusic } from "lucide-react";
 import { useSelection } from "@/hooks/use-selection";
 import { useEffect, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
@@ -66,13 +67,18 @@ export function PlaylistsTab({ playlists, onSelectionChange, loading }: Playlist
                         }}
                         onCheckedChange={toggleAll}
                     />
-                    <div>
-                        <Label htmlFor="select-all-playlists" className="text-base font-semibold cursor-pointer">
-                            Select All Playlists
-                        </Label>
-                        <p className="text-sm text-muted-foreground">
-                            {selectedIds.length} of {playlists.length} selected
-                        </p>
+                    <div className="flex items-center gap-2">
+                        <div className="bg-primary/20 p-1.5 rounded-full text-primary hidden sm:block">
+                            <ListMusic className="w-4 h-4 fill-current" />
+                        </div>
+                        <div>
+                            <Label htmlFor="select-all-playlists" className="text-base font-semibold cursor-pointer">
+                                Select All Playlists
+                            </Label>
+                            <p className="text-sm text-muted-foreground">
+                                {selectedIds.length} of {playlists.length} selected
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -4,10 +4,6 @@ server:
 spring:
   application:
     name: spotifysync
-
-sentry:
-  dsn: ${SENTRY_DSN:}
-  traces-sample-rate: 1.0
   datasource:
     url: jdbc:h2:mem:spotifysync;DB_CLOSE_DELAY=-1
     driverClassName: org.h2.Driver
@@ -21,6 +17,10 @@ sentry:
     hibernate:
       ddl-auto: update
     show-sql: false
+
+sentry:
+  dsn: ${SENTRY_DSN:}
+  traces-sample-rate: 1.0
 
 spotify:
   client-id: ${SPOTIFY_CLIENT_ID:9b55437048a848f2bb077f20f30ee53f}

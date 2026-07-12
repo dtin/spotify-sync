@@ -16,23 +16,24 @@ import com.spotifysync.enums.SyncTaskType;
 import com.spotifysync.repository.SyncSessionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class SyncService {
 
     private final SpotifyAuthService authService;
@@ -41,6 +42,20 @@ public class SyncService {
     private final SyncSessionRepository sessionRepository;
     private final SpotifyApiClient restTemplate;
     private final ObjectMapper objectMapper;
+    private final Executor taskExecutor;
+
+    public SyncService(SpotifyAuthService authService, SpotifyApiService apiService,
+                       SyncProgressService progressService, SyncSessionRepository sessionRepository,
+                       SpotifyApiClient restTemplate, ObjectMapper objectMapper,
+                       @Qualifier("syncTaskExecutor") Executor taskExecutor) {
+        this.authService = authService;
+        this.apiService = apiService;
+        this.progressService = progressService;
+        this.sessionRepository = sessionRepository;
+        this.restTemplate = restTemplate;
+        this.objectMapper = objectMapper;
+        this.taskExecutor = taskExecutor;
+    }
 
     @Async("syncTaskExecutor")
     public void startSync(String userSessionId, SyncRequest request) {
@@ -103,15 +118,15 @@ public class SyncService {
                 task.setErrorMessage(e.getMessage());
             }
             session.setFailedTasks(tasks.size());
-            sessionRepository.save(session);
-            broadcastProgress(session);
+            updateSessionState(session);
             return;
         }
 
-        for (SyncTask task : tasks) {
-            task.setStatus(SyncStatus.IN_PROGRESS);
-            sessionRepository.save(session);
-            broadcastProgress(session);
+        List<CompletableFuture<Void>> futures = tasks.stream().map(task -> CompletableFuture.runAsync(() -> {
+            synchronized (session) {
+                task.setStatus(SyncStatus.IN_PROGRESS);
+                updateSessionState(session);
+            }
             
             try {
                 if (task.getType() == SyncTaskType.LIKED_SONGS) {
@@ -121,34 +136,48 @@ public class SyncService {
                 } else if (task.getType() == SyncTaskType.ALBUM) {
                     syncAlbum(task, sourceToken, destToken, session);
                 }
-                task.setStatus(SyncStatus.COMPLETED);
-                session.setCompletedTasks(session.getCompletedTasks() + 1);
+                
+                synchronized (session) {
+                    task.setStatus(SyncStatus.COMPLETED);
+                    session.setCompletedTasks(session.getCompletedTasks() + 1);
+                }
             } catch (Exception e) {
                 log.error("Task failed", e);
-                task.setStatus(SyncStatus.FAILED);
-                task.setErrorMessage(e.getMessage());
-                session.setFailedTasks(session.getFailedTasks() + 1);
+                synchronized (session) {
+                    task.setStatus(SyncStatus.FAILED);
+                    task.setErrorMessage(e.getMessage());
+                    session.setFailedTasks(session.getFailedTasks() + 1);
+                }
             }
             
+            updateSessionState(session);
+        }, taskExecutor)).collect(Collectors.toList());
+        
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+        
+        synchronized (session) {
+            session.setStatus(SyncStatus.COMPLETED);
+            session.setCompletedAt(LocalDateTime.now());
+            updateSessionState(session);
+        }
+    }
+
+    private void updateSessionState(SyncSession session) {
+        synchronized (session) {
             sessionRepository.save(session);
             broadcastProgress(session);
         }
-        
-        session.setStatus(SyncStatus.COMPLETED);
-        session.setCompletedAt(LocalDateTime.now());
-        sessionRepository.save(session);
-        broadcastProgress(session);
     }
 
     private void syncLikedSongs(SyncTask task, String destToken, SyncSession session, List<String> trackIds) throws Exception {
-        // Use the track IDs provided by the frontend (which are in newest-to-oldest order)
-        // Reverse them so we sync oldest first
         List<String> idsToSync = new ArrayList<>(trackIds);
         Collections.reverse(idsToSync);
         
-        task.setTotalTracks(idsToSync.size());
+        synchronized (session) {
+            task.setTotalTracks(idsToSync.size());
+            updateSessionState(session);
+        }
         
-        // Save to destination in batches of 50
         for (int i = 0; i < idsToSync.size(); i += 50) {
             int end = Math.min(i + 50, idsToSync.size());
             List<String> batch = idsToSync.subList(i, end);
@@ -164,24 +193,27 @@ public class SyncService {
             HttpEntity<String> request = new HttpEntity<>(body.toString(), headers);
             restTemplate.exchange("https://api.spotify.com/v1/me/tracks", HttpMethod.PUT, request, String.class);
             
-            task.setSyncedTracks(task.getSyncedTracks() + batch.size());
-            sessionRepository.save(session);
-            broadcastProgress(session);
+            synchronized (session) {
+                task.setSyncedTracks(task.getSyncedTracks() + batch.size());
+                updateSessionState(session);
+            }
         }
     }
 
     private void syncPlaylist(SyncTask task, String sourceToken, String destToken, String destUserId, SyncSession session) throws Exception {
-        // 1. Get Playlist details from source
         ResponseEntity<String> plResp = restTemplate.exchange("https://api.spotify.com/v1/playlists/" + task.getSourcePlaylistId(), HttpMethod.GET, createAuthHeader(sourceToken), String.class);
         JsonNode plNode = objectMapper.readTree(plResp.getBody());
         String name = plNode.get("name").asText();
         String desc = plNode.has("description") ? plNode.get("description").asText() : "";
-        task.setSourcePlaylistName(name);
-        if (plNode.has("images") && plNode.get("images").isArray() && plNode.get("images").size() > 0) {
-            task.setSourcePlaylistImageUrl(plNode.get("images").get(0).get("url").asText());
+        
+        synchronized (session) {
+            task.setSourcePlaylistName(name);
+            if (plNode.has("images") && plNode.get("images").isArray() && plNode.get("images").size() > 0) {
+                task.setSourcePlaylistImageUrl(plNode.get("images").get(0).get("url").asText());
+            }
+            updateSessionState(session);
         }
         
-        // 2. Create Playlist on destination
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(destToken);
         headers.set("Content-Type", "application/json");
@@ -193,9 +225,12 @@ public class SyncService {
         HttpEntity<String> createReq = new HttpEntity<>(body.toString(), headers);
         ResponseEntity<String> createResp = restTemplate.exchange("https://api.spotify.com/v1/users/" + destUserId + "/playlists", HttpMethod.POST, createReq, String.class);
         String targetPlaylistId = objectMapper.readTree(createResp.getBody()).get("id").asText();
-        task.setTargetPlaylistId(targetPlaylistId);
         
-        // 3. Fetch all tracks from source playlist and add to destination
+        synchronized (session) {
+            task.setTargetPlaylistId(targetPlaylistId);
+            updateSessionState(session);
+        }
+        
         List<String> trackUris = new ArrayList<>();
         String url = "https://api.spotify.com/v1/playlists/" + task.getSourcePlaylistId() + "/tracks?limit=100";
         
@@ -213,9 +248,11 @@ public class SyncService {
             url = root.has("next") && !root.get("next").isNull() ? root.get("next").asText() : null;
         }
         
-        task.setTotalTracks(trackUris.size());
+        synchronized (session) {
+            task.setTotalTracks(trackUris.size());
+            updateSessionState(session);
+        }
         
-        // 4. Add tracks in batches of 100
         for (int i = 0; i < trackUris.size(); i += 100) {
             int end = Math.min(i + 100, trackUris.size());
             List<String> batch = trackUris.subList(i, end);
@@ -227,14 +264,14 @@ public class SyncService {
             HttpEntity<String> addReq = new HttpEntity<>(addBody.toString(), headers);
             restTemplate.exchange("https://api.spotify.com/v1/playlists/" + targetPlaylistId + "/tracks", HttpMethod.POST, addReq, String.class);
             
-            task.setSyncedTracks(task.getSyncedTracks() + batch.size());
-            sessionRepository.save(session);
-            broadcastProgress(session);
+            synchronized (session) {
+                task.setSyncedTracks(task.getSyncedTracks() + batch.size());
+                updateSessionState(session);
+            }
         }
     }
 
     private void syncAlbum(SyncTask task, String sourceToken, String destToken, SyncSession session) throws Exception {
-        // Just save the album ID to destination
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(destToken);
         headers.set("Content-Type", "application/json");
@@ -246,8 +283,11 @@ public class SyncService {
         HttpEntity<String> request = new HttpEntity<>(body.toString(), headers);
         restTemplate.exchange("https://api.spotify.com/v1/me/albums", HttpMethod.PUT, request, String.class);
         
-        task.setTotalTracks(1);
-        task.setSyncedTracks(1);
+        synchronized (session) {
+            task.setTotalTracks(1);
+            task.setSyncedTracks(1);
+            updateSessionState(session);
+        }
     }
     
     private String getUserId(String token) throws Exception {

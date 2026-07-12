@@ -75,7 +75,7 @@ export function LikedSongsTab({ tracks, onSelectionChange, loading }: LikedSongs
                                 Select All Liked Songs
                             </Label>
                             <p className="text-sm text-muted-foreground">
-                                {selectedIds.length} tracks will be copied (Oldest to Newest)
+                                {selectedIds.length} of {tracks.length} tracks selected (Oldest to Newest)
                             </p>
                         </div>
                     </div>
@@ -91,7 +91,7 @@ export function LikedSongsTab({ tracks, onSelectionChange, loading }: LikedSongs
                     <div className="flex-1">Title</div>
                     <div className="w-24 text-right">Status</div>
                 </div>
-                <ScrollArea viewportRef={parentRef} className="h-[400px]">
+                <div ref={parentRef} className="h-[400px] overflow-y-auto relative custom-scrollbar">
                     <div
                         className="w-full relative"
                         style={{ height: `${rowVirtualizer.getTotalSize()}px` }}
@@ -114,8 +114,7 @@ export function LikedSongsTab({ tracks, onSelectionChange, loading }: LikedSongs
                                 >
                                     <Checkbox 
                                         checked={selectedIds.includes(track.trackId)} 
-                                        onCheckedChange={() => toggleItem(track.trackId)}
-                                        onClick={(e) => e.stopPropagation()}
+                                        className="pointer-events-none"
                                     />
                                     <div className="w-10 text-center text-sm text-muted-foreground">{virtualRow.index + 1}</div>
                                     <div className="flex-1 flex items-center gap-3 overflow-hidden">
@@ -141,7 +140,7 @@ export function LikedSongsTab({ tracks, onSelectionChange, loading }: LikedSongs
                             </div>
                         )}
                     </div>
-                </ScrollArea>
+                </div>
             </div>
         </div>
     );

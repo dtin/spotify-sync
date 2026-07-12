@@ -38,6 +38,11 @@ export function AlbumsTab({ albums, onSelectionChange, loading }: AlbumsTabProps
         onSelectionChange(selectedIds);
     }, [selectedIds, onSelectionChange]);
 
+    const totalSelectedTracks = albums
+        .filter(a => selectedIds.includes(a.spotifyAlbumId))
+        .reduce((sum, a) => sum + a.totalTracks, 0);
+    const totalTracks = albums.reduce((sum, a) => sum + a.totalTracks, 0);
+
     const parentRef = useRef<HTMLDivElement>(null);
     const rowVirtualizer = useVirtualizer({
         count: albums.length,
@@ -75,7 +80,7 @@ export function AlbumsTab({ albums, onSelectionChange, loading }: AlbumsTabProps
                                 Select All Albums
                             </Label>
                             <p className="text-sm text-muted-foreground">
-                                {selectedIds.length} of {albums.length} selected
+                                {selectedIds.length} of {albums.length} albums selected ({totalSelectedTracks} of {totalTracks} tracks)
                             </p>
                         </div>
                     </div>
@@ -85,7 +90,7 @@ export function AlbumsTab({ albums, onSelectionChange, loading }: AlbumsTabProps
             <Separator />
             
             <div className="rounded-md border">
-                <ScrollArea viewportRef={parentRef} className="h-[400px]">
+                <div ref={parentRef} className="h-[400px] overflow-y-auto relative custom-scrollbar">
                     <div
                         className="w-full relative"
                         style={{ height: `${rowVirtualizer.getTotalSize()}px` }}
@@ -108,8 +113,7 @@ export function AlbumsTab({ albums, onSelectionChange, loading }: AlbumsTabProps
                                 >
                                     <Checkbox 
                                         checked={selectedIds.includes(album.spotifyAlbumId)} 
-                                        onCheckedChange={() => toggleItem(album.spotifyAlbumId)}
-                                        onClick={(e) => e.stopPropagation()}
+                                        className="pointer-events-none"
                                     />
                                     <img src={album.imageUrl || "/placeholder.svg"} alt={album.name} className="w-12 h-12 rounded object-cover shadow-sm" />
                                     <div className="flex-1 min-w-0">
@@ -134,7 +138,7 @@ export function AlbumsTab({ albums, onSelectionChange, loading }: AlbumsTabProps
                             </div>
                         )}
                     </div>
-                </ScrollArea>
+                </div>
             </div>
         </div>
     );

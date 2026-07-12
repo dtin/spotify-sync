@@ -34,6 +34,11 @@ export function PlaylistsTab({ playlists, onSelectionChange, loading }: Playlist
         toggleItem 
     } = useSelection(playlists, 'spotifyPlaylistId');
 
+    const totalSelectedTracks = playlists
+        .filter(p => selectedIds.includes(p.spotifyPlaylistId))
+        .reduce((sum, p) => sum + p.totalTracks, 0);
+    const totalTracks = playlists.reduce((sum, p) => sum + p.totalTracks, 0);
+
     // Notify parent when selection changes
     useEffect(() => {
         onSelectionChange(selectedIds);
@@ -76,7 +81,7 @@ export function PlaylistsTab({ playlists, onSelectionChange, loading }: Playlist
                                 Select All Playlists
                             </Label>
                             <p className="text-sm text-muted-foreground">
-                                {selectedIds.length} of {playlists.length} selected
+                                {selectedIds.length} of {playlists.length} playlists selected ({totalSelectedTracks} of {totalTracks} tracks)
                             </p>
                         </div>
                     </div>
@@ -86,7 +91,7 @@ export function PlaylistsTab({ playlists, onSelectionChange, loading }: Playlist
             <Separator />
             
             <div className="rounded-md border">
-                <ScrollArea viewportRef={parentRef} className="h-[400px]">
+                <div ref={parentRef} className="h-[400px] overflow-y-auto relative custom-scrollbar">
                     <div
                         className="w-full relative"
                         style={{ height: `${rowVirtualizer.getTotalSize()}px` }}
@@ -109,8 +114,7 @@ export function PlaylistsTab({ playlists, onSelectionChange, loading }: Playlist
                                 >
                                     <Checkbox 
                                         checked={selectedIds.includes(playlist.spotifyPlaylistId)} 
-                                        onCheckedChange={() => toggleItem(playlist.spotifyPlaylistId)}
-                                        onClick={(e) => e.stopPropagation()}
+                                        className="pointer-events-none"
                                     />
                                     <img src={playlist.imageUrl || "/placeholder.svg"} alt={playlist.name} className="w-12 h-12 rounded object-cover shadow-sm" />
                                     <div className="flex-1 min-w-0">
@@ -135,7 +139,7 @@ export function PlaylistsTab({ playlists, onSelectionChange, loading }: Playlist
                             </div>
                         )}
                     </div>
-                </ScrollArea>
+                </div>
             </div>
         </div>
     );

@@ -71,7 +71,7 @@ export function PlaylistsTab({ playlists, onSelectionChange, loading }: Playlist
             <Separator />
             
             <div className="rounded-md border">
-                <ScrollArea type="always" className="h-[400px]">
+                <ScrollArea className="h-[400px]">
                     <div className="p-2 space-y-1">
                         {playlists.map((playlist) => (
                             <div key={playlist.spotifyPlaylistId} className="flex items-center gap-4 p-2 hover:bg-muted/50 rounded-md transition-colors cursor-pointer" onClick={() => toggleItem(playlist.spotifyPlaylistId)}>

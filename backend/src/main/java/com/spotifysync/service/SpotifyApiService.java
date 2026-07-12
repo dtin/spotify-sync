@@ -8,6 +8,7 @@ import com.spotifysync.dto.response.TrackResponse;
 import com.spotifysync.enums.AccountType;
 import com.spotifysync.exception.SpotifyApiException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -27,12 +28,21 @@ public class SpotifyApiService {
     private final SpotifyApiClient restTemplate;
     private final ObjectMapper objectMapper;
 
+    @Value("${spotify.api.limit.playlists:50}")
+    private int playlistLimit;
+
+    @Value("${spotify.api.limit.tracks:50}")
+    private int trackLimit;
+
+    @Value("${spotify.api.limit.albums:50}")
+    private int albumLimit;
+
     // --- PLAYLISTS ---
 
     public List<PlaylistResponse> getUserPlaylists(String userSessionId, AccountType accountType) {
         String accessToken = authService.getValidAccessToken(userSessionId, accountType);
         List<PlaylistResponse> playlists = new ArrayList<>();
-        String url = "https://api.spotify.com/v1/me/playlists?limit=50";
+        String url = "https://api.spotify.com/v1/me/playlists?limit=" + playlistLimit;
 
         try {
             while (url != null && !url.equals("null")) {
@@ -72,7 +82,7 @@ public class SpotifyApiService {
     public List<TrackResponse> getSavedTracks(String userSessionId, AccountType accountType) {
         String accessToken = authService.getValidAccessToken(userSessionId, accountType);
         List<TrackResponse> tracks = new ArrayList<>();
-        String url = "https://api.spotify.com/v1/me/tracks?limit=50";
+        String url = "https://api.spotify.com/v1/me/tracks?limit=" + trackLimit;
 
         try {
             while (url != null && !url.equals("null")) {
@@ -117,7 +127,7 @@ public class SpotifyApiService {
     public List<AlbumResponse> getSavedAlbums(String userSessionId, AccountType accountType) {
         String accessToken = authService.getValidAccessToken(userSessionId, accountType);
         List<AlbumResponse> albums = new ArrayList<>();
-        String url = "https://api.spotify.com/v1/me/albums?limit=50";
+        String url = "https://api.spotify.com/v1/me/albums?limit=" + albumLimit;
 
         try {
             while (url != null && !url.equals("null")) {

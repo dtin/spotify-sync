@@ -1,6 +1,7 @@
 package com.spotifysync.service;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -12,10 +13,12 @@ import org.springframework.web.client.RestTemplate;
 @Slf4j
 @Component
 public class SpotifyApiClient {
+    @Value("${spotify.api.max-retries:3}")
+    private int maxRetries;
+
     private final RestTemplate restTemplate = new RestTemplate();
 
     public <T> ResponseEntity<T> exchange(String url, HttpMethod method, HttpEntity<?> requestEntity, Class<T> responseType) {
-        int maxRetries = 3;
         for (int attempt = 1; attempt <= maxRetries; attempt++) {
             try {
                 return restTemplate.exchange(url, method, requestEntity, responseType);

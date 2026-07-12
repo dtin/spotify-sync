@@ -17,6 +17,7 @@ import com.spotifysync.repository.SyncSessionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -43,6 +44,9 @@ public class SyncService {
     private final SpotifyApiClient restTemplate;
     private final ObjectMapper objectMapper;
     private final Executor taskExecutor;
+
+    @Value("${spotify.api.limit.sync-playlist-tracks:100}")
+    private int syncPlaylistTracksLimit;
 
     public SyncService(SpotifyAuthService authService, SpotifyApiService apiService,
                        SyncProgressService progressService, SyncSessionRepository sessionRepository,
@@ -227,7 +231,7 @@ public class SyncService {
         }
         
         List<String> trackUris = new ArrayList<>();
-        String url = "https://api.spotify.com/v1/playlists/" + task.getSourcePlaylistId() + "/tracks?limit=100";
+        String url = "https://api.spotify.com/v1/playlists/" + task.getSourcePlaylistId() + "/tracks?limit=" + syncPlaylistTracksLimit;
         
         while (url != null && !url.equals("null")) {
             ResponseEntity<String> response = restTemplate.get(url, sourceToken, String.class);

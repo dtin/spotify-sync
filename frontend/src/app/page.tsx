@@ -71,6 +71,11 @@ function HomeContent() {
             return;
         }
 
+        if (status?.source.spotifyId && status?.destination.spotifyId && status.source.spotifyId === status.destination.spotifyId) {
+            toast.error("Source and destination cannot be the same account");
+            return;
+        }
+
         if (selectedLikedSongs.length === 0 && selectedPlaylists.length === 0 && selectedAlbums.length === 0) {
             toast.warning("Please select at least one item to sync");
             return;

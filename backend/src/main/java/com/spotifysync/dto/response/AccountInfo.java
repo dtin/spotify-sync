@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class AccountInfo {
+    private String spotifyId;
     private String displayName;
     private String email;
     private String profileImageUrl;

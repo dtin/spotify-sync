@@ -3,6 +3,7 @@ import { fetchWithAuth, API_BASE_URL } from '../lib/api';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 export interface AccountInfo {
+    spotifyId: string;
     displayName: string;
     email: string;
     profileImageUrl: string;

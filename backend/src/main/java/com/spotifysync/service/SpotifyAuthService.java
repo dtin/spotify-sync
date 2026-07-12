@@ -195,17 +195,17 @@ public class SpotifyAuthService {
         Optional<SpotifyAccount> sourceOpt = accountRepository.findByUserSessionIdAndAccountType(userSessionId, AccountType.SOURCE);
         if (sourceOpt.isPresent()) {
             SpotifyAccount s = sourceOpt.get();
-            response.setSource(new AccountInfo(s.getDisplayName(), s.getEmail(), s.getProfileImageUrl(), true));
+            response.setSource(new AccountInfo(s.getSpotifyUserId(), s.getDisplayName(), s.getEmail(), s.getProfileImageUrl(), true));
         } else {
-            response.setSource(new AccountInfo(null, null, null, false));
+            response.setSource(new AccountInfo(null, null, null, null, false));
         }
         
         Optional<SpotifyAccount> destOpt = accountRepository.findByUserSessionIdAndAccountType(userSessionId, AccountType.DESTINATION);
         if (destOpt.isPresent()) {
             SpotifyAccount d = destOpt.get();
-            response.setDestination(new AccountInfo(d.getDisplayName(), d.getEmail(), d.getProfileImageUrl(), true));
+            response.setDestination(new AccountInfo(d.getSpotifyUserId(), d.getDisplayName(), d.getEmail(), d.getProfileImageUrl(), true));
         } else {
-            response.setDestination(new AccountInfo(null, null, null, false));
+            response.setDestination(new AccountInfo(null, null, null, null, false));
         }
         
         return response;

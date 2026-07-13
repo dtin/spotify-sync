@@ -70,6 +70,7 @@ You can configure the application's behavior using the following environment var
 | `PORT` | The port the Spring Boot server runs on | `8080` |
 | `FRONTEND_URL` | URL of the frontend application | `http://localhost:3000` |
 | `SENTRY_DSN` | Your Sentry DSN for error tracking | *(empty)* |
+| `MONGODB_URI` | Connection string for MongoDB (e.g. Atlas cluster) | `mongodb://localhost:27017/spotifysync` |
 | `SYNC_CORE_POOL_SIZE` | Core number of threads for the sync executor | `2` |
 | `SYNC_MAX_POOL_SIZE` | Maximum number of threads for the sync executor | `5` |
 | `SYNC_QUEUE_CAPACITY` | Max queued tasks before thread pool rejection | `50` |

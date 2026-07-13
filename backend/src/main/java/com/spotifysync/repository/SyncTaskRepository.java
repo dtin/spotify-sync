@@ -1,7 +1,7 @@
 package com.spotifysync.repository;
 
 import com.spotifysync.entity.SyncTask;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.mongodb.repository.MongoRepository;
 
-public interface SyncTaskRepository extends JpaRepository<SyncTask, Long> {
+public interface SyncTaskRepository extends MongoRepository<SyncTask, String> {
 }

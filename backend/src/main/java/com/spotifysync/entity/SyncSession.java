@@ -1,19 +1,19 @@
 package com.spotifysync.entity;
 
 import com.spotifysync.enums.SyncStatus;
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 import lombok.Data;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Entity
+@Document(collection = "sync_sessions")
 @Data
 public class SyncSession {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Id
+    private String id;
     
-    @Enumerated(EnumType.STRING)
     private SyncStatus status;
     
     private LocalDateTime startedAt;
@@ -23,8 +23,7 @@ public class SyncSession {
     private int completedTasks;
     private int failedTasks;
     
-    @OneToMany(mappedBy = "syncSession", cascade = CascadeType.ALL)
-    private List<SyncTask> tasks;
+    private List<SyncTask> tasks = new java.util.ArrayList<>(); // Stores the IDs of SyncTasks
     
     private String userSessionId;
 }

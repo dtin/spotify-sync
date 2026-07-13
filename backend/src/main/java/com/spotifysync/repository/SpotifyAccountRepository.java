@@ -2,11 +2,11 @@ package com.spotifysync.repository;
 
 import com.spotifysync.entity.SpotifyAccount;
 import com.spotifysync.enums.AccountType;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.mongodb.repository.MongoRepository;
 
 import java.util.Optional;
 
-public interface SpotifyAccountRepository extends JpaRepository<SpotifyAccount, Long> {
-    Optional<SpotifyAccount> findByUserSessionIdAndAccountType(String userSessionId, AccountType accountType);
-    void deleteByUserSessionIdAndAccountType(String userSessionId, AccountType accountType);
+public interface SpotifyAccountRepository extends MongoRepository<SpotifyAccount, String> {
+    Optional<SpotifyAccount> findBySystemUserIdAndAccountType(String systemUserId, AccountType accountType);
+    void deleteBySystemUserIdAndAccountType(String systemUserId, AccountType accountType);
 }

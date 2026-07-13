@@ -14,6 +14,9 @@ import com.spotifysync.enums.AccountType;
 import com.spotifysync.enums.SyncStatus;
 import com.spotifysync.enums.SyncTaskType;
 import com.spotifysync.repository.SyncSessionRepository;
+import com.spotifysync.repository.SyncStateRepository;
+import com.spotifysync.entity.SyncState;
+import com.spotifysync.entity.SyncedItem;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -41,6 +44,7 @@ public class SyncService {
     private final SpotifyApiService apiService;
     private final SyncProgressService progressService;
     private final SyncSessionRepository sessionRepository;
+    private final SyncStateRepository syncStateRepository;
     private final SpotifyApiClient restTemplate;
     private final ObjectMapper objectMapper;
     private final Executor taskExecutor;
@@ -68,12 +72,14 @@ public class SyncService {
 
     public SyncService(SpotifyAuthService authService, SpotifyApiService apiService,
                        SyncProgressService progressService, SyncSessionRepository sessionRepository,
+                       SyncStateRepository syncStateRepository,
                        SpotifyApiClient restTemplate, ObjectMapper objectMapper,
                        @Qualifier("syncTaskExecutor") Executor taskExecutor) {
         this.authService = authService;
         this.apiService = apiService;
         this.progressService = progressService;
         this.sessionRepository = sessionRepository;
+        this.syncStateRepository = syncStateRepository;
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
         this.taskExecutor = taskExecutor;
@@ -90,8 +96,7 @@ public class SyncService {
         
         if (request.getLikedSongIds() != null && !request.getLikedSongIds().isEmpty()) {
             SyncTask t = new SyncTask();
-            t.setSyncSession(session);
-            t.setType(SyncTaskType.LIKED_SONGS);
+                        t.setType(SyncTaskType.LIKED_SONGS);
             t.setStatus(SyncStatus.PENDING);
             tasks.add(t);
         }
@@ -99,8 +104,7 @@ public class SyncService {
         if (request.getPlaylistIds() != null) {
             for (String id : request.getPlaylistIds()) {
                 SyncTask t = new SyncTask();
-                t.setSyncSession(session);
-                t.setType(SyncTaskType.PLAYLIST);
+                                t.setType(SyncTaskType.PLAYLIST);
                 t.setSourcePlaylistId(id);
                 t.setStatus(SyncStatus.PENDING);
                 tasks.add(t);
@@ -110,8 +114,7 @@ public class SyncService {
         if (request.getAlbumIds() != null) {
             for (String id : request.getAlbumIds()) {
                 SyncTask t = new SyncTask();
-                t.setSyncSession(session);
-                t.setType(SyncTaskType.ALBUM);
+                                t.setType(SyncTaskType.ALBUM);
                 t.setSourceAlbumId(id);
                 t.setStatus(SyncStatus.PENDING);
                 tasks.add(t);
@@ -173,7 +176,9 @@ public class SyncService {
             }
             
             updateSessionState(session);
-        }, taskExecutor)).collect(Collectors.toList());
+        }
+        
+        , taskExecutor)).collect(Collectors.toList());
         
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
         
@@ -182,6 +187,7 @@ public class SyncService {
             session.setCompletedAt(LocalDateTime.now());
             updateSessionState(session);
         }
+        updateSyncStateData(userSessionId, request);
     }
 
     private void updateSessionState(SyncSession session) {
@@ -358,5 +364,60 @@ public class SyncService {
         dto.setTasks(taskDtos);
         
         progressService.sendProgress(session.getUserSessionId(), dto);
+    }
+
+    private void updateSyncStateData(String systemUserId, SyncRequest request) {
+        SyncState state = syncStateRepository.findBySystemUserId(systemUserId).orElse(new SyncState());
+        state.setSystemUserId(systemUserId);
+        state.setFullySynced(true);
+        
+        LocalDateTime now = LocalDateTime.now();
+        
+        if (request.getLikedSongIds() != null) {
+            request.getLikedSongIds().forEach(id -> {
+                if (state.getSyncedTracks().stream().noneMatch(t -> t.getSpotifyId().equals(id))) {
+                    state.getSyncedTracks().add(new SyncedItem(id, now));
+                }
+            });
+        }
+        if (request.getIgnoredSongIds() != null) {
+            request.getIgnoredSongIds().forEach(id -> {
+                if (state.getIgnoredTracks().stream().noneMatch(t -> t.getSpotifyId().equals(id))) {
+                    state.getIgnoredTracks().add(new SyncedItem(id, now));
+                }
+            });
+        }
+        
+        if (request.getPlaylistIds() != null) {
+            request.getPlaylistIds().forEach(id -> {
+                if (state.getSyncedPlaylists().stream().noneMatch(p -> p.getSpotifyId().equals(id))) {
+                    state.getSyncedPlaylists().add(new SyncedItem(id, now));
+                }
+            });
+        }
+        if (request.getIgnoredPlaylistIds() != null) {
+            request.getIgnoredPlaylistIds().forEach(id -> {
+                if (state.getIgnoredPlaylists().stream().noneMatch(p -> p.getSpotifyId().equals(id))) {
+                    state.getIgnoredPlaylists().add(new SyncedItem(id, now));
+                }
+            });
+        }
+        
+        if (request.getAlbumIds() != null) {
+            request.getAlbumIds().forEach(id -> {
+                if (state.getSyncedAlbums().stream().noneMatch(a -> a.getSpotifyId().equals(id))) {
+                    state.getSyncedAlbums().add(new SyncedItem(id, now));
+                }
+            });
+        }
+        if (request.getIgnoredAlbumIds() != null) {
+            request.getIgnoredAlbumIds().forEach(id -> {
+                if (state.getIgnoredAlbums().stream().noneMatch(a -> a.getSpotifyId().equals(id))) {
+                    state.getIgnoredAlbums().add(new SyncedItem(id, now));
+                }
+            });
+        }
+        
+        syncStateRepository.save(state);
     }
 }

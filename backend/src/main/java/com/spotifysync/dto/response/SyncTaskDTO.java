@@ -6,7 +6,7 @@ import lombok.Data;
 
 @Data
 public class SyncTaskDTO {
-    private Long taskId;
+    private String taskId;
     private SyncTaskType type;       // PLAYLIST, LIKED_SONGS, ALBUM
     private String itemName;         // Playlist name / "Liked Songs" / Album name
     private String itemImageUrl;

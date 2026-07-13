@@ -32,16 +32,25 @@ export function useSyncWebSocket() {
     const clientRef = useRef<Client | null>(null);
 
     useEffect(() => {
-        const token = localStorage.getItem('spotify_session_token');
+        const token = localStorage.getItem('system_token');
         if (!token) return;
 
-        const socketUrl = `${API_BASE_URL}/ws`;
+        let systemUserId = '';
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            systemUserId = payload.sub;
+        } catch (e) {
+            console.error('Failed to parse system_token', e);
+            return;
+        }
+
+        const socketUrl = `${API_BASE_URL}/ws-sync`;
         
         const client = new Client({
             webSocketFactory: () => new SockJS(socketUrl),
             onConnect: () => {
                 setConnected(true);
-                client.subscribe(`/topic/sync-progress/${token}`, (message) => {
+                client.subscribe(`/topic/sync-progress/${systemUserId}`, (message) => {
                     const data = JSON.parse(message.body);
                     setProgress(data);
                 });

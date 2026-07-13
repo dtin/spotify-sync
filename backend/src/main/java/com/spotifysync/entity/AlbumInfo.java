@@ -1,22 +1,22 @@
 package com.spotifysync.entity;
 
 import com.spotifysync.enums.AccountType;
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 import lombok.Data;
 
 import java.time.LocalDateTime;
 
-@Entity
+@Document(collection = "album_info")
 @Data
 public class AlbumInfo {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Id
+    private String id;
     
     private String spotifyAlbumId;
     private String name;
     private String artistName;
     
-    @Column(columnDefinition = "TEXT")
     private String imageUrl;
     
     private int totalTracks;
@@ -24,7 +24,6 @@ public class AlbumInfo {
     
     private String userSessionId;
     
-    @Enumerated(EnumType.STRING)
     private AccountType accountType;
     
     private boolean synced;

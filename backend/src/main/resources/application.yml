@@ -4,19 +4,13 @@ server:
 spring:
   application:
     name: spotifysync
-  datasource:
-    url: jdbc:h2:mem:spotifysync;DB_CLOSE_DELAY=-1
-    driverClassName: org.h2.Driver
-    username: sa
-    password:
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: false
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/spotifysync}
+
+jwt:
+  secret: ${JWT_SECRET:8d4e4f620bd27f54c935c1265fdb0e34b9d0b89f5bc5424750c8227b613e5102} # Example 256-bit key for local
+  expiration-ms: 86400000 # 24 hours
 
 sentry:
   dsn: ${SENTRY_DSN:}

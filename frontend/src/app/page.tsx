@@ -11,7 +11,9 @@ import { SyncProgressDashboard } from "@/components/sync/SyncProgressDashboard";
 import { Button } from "@/components/ui/button";
 import { fetchWithAuth } from "@/lib/api";
 import { useSpotifyAuth } from "@/hooks/use-spotify-auth";
+import { useSystemAuth } from "@/hooks/use-system-auth";
 import { useSyncWebSocket } from "@/hooks/use-sync-websocket";
+import { SystemLogin } from "@/components/auth/SystemLogin";
 import { Heart, ListMusic, Disc3, Rocket } from "lucide-react";
 import { toast } from "sonner";
 
@@ -83,13 +85,20 @@ function HomeContent() {
 
         try {
             setIsSyncing(true);
+            const ignoredSongIds = likedSongs.map(t => t.trackId).filter(id => !selectedLikedSongs.includes(id));
+            const ignoredPlaylistIds = playlists.map(p => p.playlistId).filter(id => !selectedPlaylists.includes(id));
+            const ignoredAlbumIds = albums.map(a => a.albumId).filter(id => !selectedAlbums.includes(id));
+
             await fetchWithAuth('/api/sync/start', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     likedSongIds: selectedLikedSongs,
+                    ignoredSongIds: ignoredSongIds,
                     playlistIds: selectedPlaylists,
-                    albumIds: selectedAlbums
+                    ignoredPlaylistIds: ignoredPlaylistIds,
+                    albumIds: selectedAlbums,
+                    ignoredAlbumIds: ignoredAlbumIds
                 })
             });
             toast.info("Sync process started in the background");
@@ -201,6 +210,16 @@ function HomeContent() {
 }
 
 export default function Home() {
+    const { isAuthenticated, loading, login } = useSystemAuth();
+
+    if (loading) {
+        return <div className="flex h-screen items-center justify-center">Loading...</div>;
+    }
+
+    if (!isAuthenticated) {
+        return <SystemLogin onLoginSuccess={login} />;
+    }
+
     return (
         <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}>
             <HomeContent />

@@ -2,20 +2,14 @@ package com.spotifysync.entity;
 
 import com.spotifysync.enums.SyncStatus;
 import com.spotifysync.enums.SyncTaskType;
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
 import lombok.Data;
 
-@Entity
 @Data
 public class SyncTask {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
     
-    @ManyToOne
-    @JoinColumn(name = "sync_session_id")
-    private SyncSession syncSession;
-    
-    @Enumerated(EnumType.STRING)
+
     private SyncTaskType type; // PLAYLIST, LIKED_SONGS, ALBUM
     
     // For PLAYLIST
@@ -30,13 +24,13 @@ public class SyncTask {
     private String sourceAlbumImageUrl;
     private String sourceAlbumArtist;
     
-    @Enumerated(EnumType.STRING)
+
     private SyncStatus status;
     
     private int totalTracks;
     private int syncedTracks;
     private int skippedTracks;
     
-    @Column(columnDefinition = "TEXT")
+
     private String errorMessage;
 }

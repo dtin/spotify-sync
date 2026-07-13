@@ -58,29 +58,29 @@ public class SpotifyAuthService {
     private final ObjectMapper objectMapper;
     private final SpotifyApiClient restTemplate;
     
-    public String generateAuthUrl(AccountType accountType, String userSessionId) {
-        String state = accountType.name() + "_" + userSessionId;
+    public String generateAuthUrl(AccountType accountType, String systemUserId) {
+        String state = accountType.name() + "_" + systemUserId;
         return new StringBuilder(spotifyAccountsHost)
                 .append(pathAuthorize)
                 .append("?response_type=code")
                 .append("&client_id=").append(clientId)
-                .append("&scope=").append(scopes)
+                .append("&scope=").append(scopes.replace(",", " "))
                 .append("&redirect_uri=").append(redirectUri)
                 .append("&state=").append(state)
                 .append("&show_dialog=true")
                 .toString();
     }
     
-    public String handleCallback(String code, String state) {
-        String[] parts = state.split("_", 2);
+    public void handleCallback(String code, String state) {
+        String[] parts = state.split("_");
         if (parts.length != 2) {
-            throw new IllegalArgumentException("Invalid state");
+            throw new IllegalArgumentException("Invalid state parameter");
         }
         
         AccountType accountType = AccountType.valueOf(parts[0]);
-        String userSessionId = parts[1];
-        if (userSessionId.equals("new")) {
-            userSessionId = UUID.randomUUID().toString();
+        String systemUserId = parts[1];
+        if (systemUserId.equals("new")) {
+            systemUserId = UUID.randomUUID().toString();
         }
         
         // Exchange code for tokens
@@ -118,16 +118,16 @@ public class SpotifyAuthService {
             
             // Check if the other account is already connected with the same spotifyId
             AccountType otherType = (accountType == AccountType.SOURCE) ? AccountType.DESTINATION : AccountType.SOURCE;
-            Optional<SpotifyAccount> otherAccountOpt = accountRepository.findByUserSessionIdAndAccountType(userSessionId, otherType);
+            Optional<SpotifyAccount> otherAccountOpt = accountRepository.findBySystemUserIdAndAccountType(systemUserId, otherType);
             if (otherAccountOpt.isPresent() && otherAccountOpt.get().getSpotifyUserId().equals(spotifyUserId)) {
                 throw new SpotifyApiException("same_account");
             }
             
             // Save to DB
-            Optional<SpotifyAccount> existingOpt = accountRepository.findByUserSessionIdAndAccountType(userSessionId, accountType);
+            Optional<SpotifyAccount> existingOpt = accountRepository.findBySystemUserIdAndAccountType(systemUserId, accountType);
             SpotifyAccount account = existingOpt.orElse(new SpotifyAccount());
             account.setAccountType(accountType);
-            account.setUserSessionId(userSessionId);
+            account.setSystemUserId(systemUserId);
             account.setSpotifyUserId(spotifyUserId);
             account.setDisplayName(displayName);
             account.setEmail(email);
@@ -138,7 +138,7 @@ public class SpotifyAuthService {
             
             accountRepository.save(account);
             
-            return userSessionId;
+
         } catch (Exception e) {
             throw new SpotifyApiException("Failed to authenticate with Spotify: " + e.getMessage(), e);
         }
@@ -153,8 +153,8 @@ public class SpotifyAuthService {
         return objectMapper.readTree(response.getBody());
     }
     
-    public String getValidAccessToken(String userSessionId, AccountType accountType) {
-        SpotifyAccount account = accountRepository.findByUserSessionIdAndAccountType(userSessionId, accountType)
+    public String getValidAccessToken(String systemUserId, AccountType accountType) {
+        SpotifyAccount account = accountRepository.findBySystemUserIdAndAccountType(systemUserId, accountType)
                 .orElseThrow(() -> new SpotifyApiException("Account not connected: " + accountType));
                 
         if (LocalDateTime.now().isAfter(account.getExpiresAt())) {
@@ -196,10 +196,10 @@ public class SpotifyAuthService {
         }
     }
     
-    public AuthStatusResponse getAuthStatus(String userSessionId) {
+    public AuthStatusResponse getAuthStatus(String systemUserId) {
         AuthStatusResponse response = new AuthStatusResponse();
         
-        Optional<SpotifyAccount> sourceOpt = accountRepository.findByUserSessionIdAndAccountType(userSessionId, AccountType.SOURCE);
+        Optional<SpotifyAccount> sourceOpt = accountRepository.findBySystemUserIdAndAccountType(systemUserId, AccountType.SOURCE);
         if (sourceOpt.isPresent()) {
             SpotifyAccount s = sourceOpt.get();
             response.setSource(new AccountInfo(s.getSpotifyUserId(), s.getDisplayName(), s.getEmail(), s.getProfileImageUrl(), true));
@@ -207,7 +207,7 @@ public class SpotifyAuthService {
             response.setSource(new AccountInfo(null, null, null, null, false));
         }
         
-        Optional<SpotifyAccount> destOpt = accountRepository.findByUserSessionIdAndAccountType(userSessionId, AccountType.DESTINATION);
+        Optional<SpotifyAccount> destOpt = accountRepository.findBySystemUserIdAndAccountType(systemUserId, AccountType.DESTINATION);
         if (destOpt.isPresent()) {
             SpotifyAccount d = destOpt.get();
             response.setDestination(new AccountInfo(d.getSpotifyUserId(), d.getDisplayName(), d.getEmail(), d.getProfileImageUrl(), true));
@@ -219,7 +219,7 @@ public class SpotifyAuthService {
     }
     
     @Transactional
-    public void logout(String userSessionId, AccountType accountType) {
-        accountRepository.deleteByUserSessionIdAndAccountType(userSessionId, accountType);
+    public void logout(String systemUserId, AccountType accountType) {
+        accountRepository.deleteBySystemUserIdAndAccountType(systemUserId, accountType);
     }
 }

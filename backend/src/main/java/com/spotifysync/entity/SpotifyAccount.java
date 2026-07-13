@@ -1,18 +1,18 @@
 package com.spotifysync.entity;
 
 import com.spotifysync.enums.AccountType;
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 import lombok.Data;
 
 import java.time.LocalDateTime;
 
-@Entity
+@Document(collection = "spotify_accounts")
 @Data
 public class SpotifyAccount {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Id
+    private String id;
     
-    @Enumerated(EnumType.STRING)
     private AccountType accountType; // SOURCE, DESTINATION
     
     private String spotifyUserId;
@@ -20,13 +20,10 @@ public class SpotifyAccount {
     private String email;
     private String profileImageUrl;
     
-    @Column(columnDefinition = "TEXT")
     private String accessToken;
     
-    @Column(columnDefinition = "TEXT")
     private String refreshToken;
     
     private LocalDateTime expiresAt;
-    
-    private String userSessionId; // Bearer token identifier for the frontend
+    private String systemUserId; // Link to SystemUser.id
 }

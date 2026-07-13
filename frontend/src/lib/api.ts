@@ -1,7 +1,7 @@
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 export async function fetchWithAuth(url: string, options: RequestInit = {}) {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('spotify_session_token') : null;
+    const token = typeof window !== 'undefined' ? localStorage.getItem('system_token') : null;
     
     const headers = new Headers(options.headers);
     if (token) {

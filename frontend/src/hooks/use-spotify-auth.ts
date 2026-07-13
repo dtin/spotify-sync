@@ -23,14 +23,9 @@ export function useSpotifyAuth() {
     const searchParams = useSearchParams();
 
     useEffect(() => {
-        // Check for token in URL after callback
-        const tokenFromUrl = searchParams.get('token');
         const errorFromUrl = searchParams.get('error');
 
-        if (tokenFromUrl) {
-            localStorage.setItem('spotify_session_token', tokenFromUrl);
-            router.replace('/'); // Clean URL
-        } else if (errorFromUrl) {
+        if (errorFromUrl) {
             if (errorFromUrl === 'same_account') {
                 toast.error("Source and destination cannot be the same account.");
             } else {
@@ -39,6 +34,7 @@ export function useSpotifyAuth() {
             router.replace('/'); // Clean URL
         }
 
+        // Always check status on load/redirect
         checkStatus();
     }, [searchParams, router]);
 
@@ -58,8 +54,8 @@ export function useSpotifyAuth() {
     };
 
     const login = (accountType: 'SOURCE' | 'DESTINATION') => {
-        const token = localStorage.getItem('spotify_session_token') || 'new';
-        window.location.href = `${API_BASE_URL}/api/auth/login/${accountType}?userSessionId=${token}`;
+        const token = localStorage.getItem('system_token');
+        window.location.href = `${API_BASE_URL}/api/auth/login/${accountType}?token=${token}`;
     };
 
     const logout = async (accountType: 'SOURCE' | 'DESTINATION') => {

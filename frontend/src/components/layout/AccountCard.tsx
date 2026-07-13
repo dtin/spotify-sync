@@ -32,6 +32,11 @@ export function AccountCard({ title, account, onLogin, onLogout }: AccountCardPr
                             <div>
                                 <p className="font-semibold">{account.displayName}</p>
                                 <p className="text-sm text-muted-foreground">{account.email}</p>
+                                {account.spotifyId && (
+                                    <p className="text-[11px] text-muted-foreground/60 font-mono mt-0.5">
+                                        ID: {account.spotifyId}
+                                    </p>
+                                )}
                             </div>
                         </div>
                         <Button variant="outline" size="sm" onClick={onLogout} className="group">

@@ -3,6 +3,12 @@ import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { API_BASE_URL } from '../lib/api';
 
+export interface SyncedTrackInfo {
+    trackName: string;
+    artistName: string;
+    status: 'SYNCED' | 'SKIPPED';
+}
+
 export interface SyncTaskDTO {
     taskId: number;
     type: 'PLAYLIST' | 'LIKED_SONGS' | 'ALBUM';
@@ -14,6 +20,10 @@ export interface SyncTaskDTO {
     skippedTracks: number;
     progressPercent: number;
     errorMessage: string;
+    // Live per-track progress
+    currentTrackName: string | null;
+    currentArtistName: string | null;
+    recentlySyncedTracks: SyncedTrackInfo[];
 }
 
 export interface SyncProgressDTO {

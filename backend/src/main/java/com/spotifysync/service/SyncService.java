@@ -155,7 +155,7 @@ public class SyncService {
             
             try {
                 if (task.getType() == SyncTaskType.LIKED_SONGS) {
-                    syncLikedSongs(task, destToken, session, request.getLikedSongIds());
+                    syncLikedSongs(task, destToken, session, request.getLikedSongIds(), request.getTrackMeta());
                 } else if (task.getType() == SyncTaskType.PLAYLIST) {
                     syncPlaylist(task, sourceToken, destToken, destUserId, session);
                 } else if (task.getType() == SyncTaskType.ALBUM) {
@@ -197,7 +197,7 @@ public class SyncService {
         }
     }
 
-    private void syncLikedSongs(SyncTask task, String destToken, SyncSession session, List<String> trackIds) throws Exception {
+    private void syncLikedSongs(SyncTask task, String destToken, SyncSession session, List<String> trackIds, java.util.Map<String, SyncRequest.TrackMeta> trackMeta) throws Exception {
         List<String> idsToSync = new ArrayList<>(trackIds);
         Collections.reverse(idsToSync);
         
@@ -210,9 +210,16 @@ public class SyncService {
             int end = Math.min(i + 50, idsToSync.size());
             List<String> batch = idsToSync.subList(i, end);
             
-            HttpHeaders headers = new HttpHeaders();
-            headers.setBearerAuth(destToken);
-            headers.set("Content-Type", "application/json");
+            // Update current track info for the first track in this batch
+            String firstId = batch.get(0);
+            if (trackMeta != null && trackMeta.containsKey(firstId)) {
+                SyncRequest.TrackMeta meta = trackMeta.get(firstId);
+                synchronized (session) {
+                    task.setCurrentTrackName(meta.getName());
+                    task.setCurrentArtistName(meta.getArtist());
+                    updateSessionState(session);
+                }
+            }
             
             ObjectNode body = objectMapper.createObjectNode();
             ArrayNode idsNode = body.putArray("ids");
@@ -222,9 +229,30 @@ public class SyncService {
             restTemplate.put(url, destToken, body.toString(), String.class);
             
             synchronized (session) {
+                // Add each track in the batch to recentlySyncedTracks
+                for (String id : batch) {
+                    String tName = id;
+                    String aName = "";
+                    if (trackMeta != null && trackMeta.containsKey(id)) {
+                        SyncRequest.TrackMeta meta = trackMeta.get(id);
+                        tName = meta.getName();
+                        aName = meta.getArtist();
+                    }
+                    SyncTask.SyncedTrackInfo info = new SyncTask.SyncedTrackInfo(tName, aName, "SYNCED");
+                    task.getRecentlySyncedTracks().add(0, info); // prepend (newest first)
+                    if (task.getRecentlySyncedTracks().size() > 30) {
+                        task.getRecentlySyncedTracks().remove(task.getRecentlySyncedTracks().size() - 1);
+                    }
+                }
                 task.setSyncedTracks(task.getSyncedTracks() + batch.size());
                 updateSessionState(session);
             }
+        }
+        // Clear current track on finish
+        synchronized (session) {
+            task.setCurrentTrackName(null);
+            task.setCurrentArtistName(null);
+            updateSessionState(session);
         }
     }
 
@@ -257,7 +285,9 @@ public class SyncService {
             updateSessionState(session);
         }
         
+        // Collect tracks with name info
         List<String> trackUris = new ArrayList<>();
+        List<String[]> trackInfo = new ArrayList<>(); // [uri, name, artist]
         String url = new StringBuilder(spotifyApiHost).append(pathBasePlaylists).append("/").append(task.getSourcePlaylistId()).append("/tracks?limit=").append(syncPlaylistTracksLimit).toString();
         
         while (url != null && !url.equals("null")) {
@@ -267,7 +297,13 @@ public class SyncService {
             if (items.isArray()) {
                 for (JsonNode item : items) {
                     if (item.has("track") && !item.get("track").isNull()) {
-                        trackUris.add(item.get("track").get("uri").asText());
+                        JsonNode t = item.get("track");
+                        String uri = t.get("uri").asText();
+                        String tName = t.has("name") ? t.get("name").asText() : uri;
+                        String aName = (t.has("artists") && t.get("artists").isArray() && t.get("artists").size() > 0)
+                            ? t.get("artists").get(0).get("name").asText() : "";
+                        trackUris.add(uri);
+                        trackInfo.add(new String[]{uri, tName, aName});
                     }
                 }
             }
@@ -283,6 +319,16 @@ public class SyncService {
             int end = Math.min(i + 100, trackUris.size());
             List<String> batch = trackUris.subList(i, end);
             
+            // Set current track from first in batch
+            if (i < trackInfo.size()) {
+                String[] first = trackInfo.get(i);
+                synchronized (session) {
+                    task.setCurrentTrackName(first[1]);
+                    task.setCurrentArtistName(first[2]);
+                    updateSessionState(session);
+                }
+            }
+            
             ObjectNode addBody = objectMapper.createObjectNode();
             ArrayNode urisNode = addBody.putArray("uris");
             batch.forEach(urisNode::add);
@@ -291,6 +337,14 @@ public class SyncService {
             restTemplate.post(addUrl, destToken, addBody.toString(), String.class);
             
             synchronized (session) {
+                for (int j = i; j < end && j < trackInfo.size(); j++) {
+                    String[] info = trackInfo.get(j);
+                    SyncTask.SyncedTrackInfo ti = new SyncTask.SyncedTrackInfo(info[1], info[2], "SYNCED");
+                    task.getRecentlySyncedTracks().add(0, ti);
+                    if (task.getRecentlySyncedTracks().size() > 30) {
+                        task.getRecentlySyncedTracks().remove(task.getRecentlySyncedTracks().size() - 1);
+                    }
+                }
                 task.setSyncedTracks(task.getSyncedTracks() + batch.size());
                 updateSessionState(session);
             }
@@ -350,6 +404,20 @@ public class SyncService {
             } else {
                 td.setItemName("Album");
             }
+            
+            // Map recently synced tracks
+            if (t.getRecentlySyncedTracks() != null) {
+                List<SyncTaskDTO.SyncedTrackInfo> recentDtos = t.getRecentlySyncedTracks().stream().map(ti -> {
+                    SyncTaskDTO.SyncedTrackInfo trackInfoDto = new SyncTaskDTO.SyncedTrackInfo();
+                    trackInfoDto.setTrackName(ti.getTrackName());
+                    trackInfoDto.setArtistName(ti.getArtistName());
+                    trackInfoDto.setStatus(ti.getStatus());
+                    return trackInfoDto;
+                }).collect(Collectors.toList());
+                td.setRecentlySyncedTracks(recentDtos);
+            }
+            td.setCurrentTrackName(t.getCurrentTrackName());
+            td.setCurrentArtistName(t.getCurrentArtistName());
             
             double p = 0;
             if (t.getTotalTracks() > 0) {

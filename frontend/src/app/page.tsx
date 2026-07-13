@@ -89,6 +89,12 @@ function HomeContent() {
             const ignoredPlaylistIds = playlists.map(p => p.playlistId).filter(id => !selectedPlaylists.includes(id));
             const ignoredAlbumIds = albums.map(a => a.albumId).filter(id => !selectedAlbums.includes(id));
 
+            // Build track metadata map for live progress display
+            const trackMeta: Record<string, { name: string; artist: string }> = {};
+            likedSongs.forEach(t => {
+                trackMeta[t.trackId] = { name: t.name, artist: t.artistName };
+            });
+
             await fetchWithAuth('/api/sync/start', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -98,7 +104,8 @@ function HomeContent() {
                     playlistIds: selectedPlaylists,
                     ignoredPlaylistIds: ignoredPlaylistIds,
                     albumIds: selectedAlbums,
-                    ignoredAlbumIds: ignoredAlbumIds
+                    ignoredAlbumIds: ignoredAlbumIds,
+                    trackMeta: trackMeta
                 })
             });
             toast.info("Sync process started in the background");

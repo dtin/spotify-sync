@@ -5,6 +5,9 @@ import com.spotifysync.enums.SyncTaskType;
 import org.springframework.data.annotation.Id;
 import lombok.Data;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Data
 public class SyncTask {
     private String id;
@@ -30,7 +33,24 @@ public class SyncTask {
     private int totalTracks;
     private int syncedTracks;
     private int skippedTracks;
-    
+
+    // Live track-level progress
+    private String currentTrackName;
+    private String currentArtistName;
+    private List<SyncedTrackInfo> recentlySyncedTracks = new ArrayList<>();
 
     private String errorMessage;
+
+    @Data
+    public static class SyncedTrackInfo {
+        private String trackName;
+        private String artistName;
+        private String status; // "SYNCED" or "SKIPPED"
+
+        public SyncedTrackInfo(String trackName, String artistName, String status) {
+            this.trackName = trackName;
+            this.artistName = artistName;
+            this.status = status;
+        }
+    }
 }

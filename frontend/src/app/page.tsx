@@ -86,8 +86,8 @@ function HomeContent() {
         try {
             setIsSyncing(true);
             const ignoredSongIds = likedSongs.map(t => t.trackId).filter(id => !selectedLikedSongs.includes(id));
-            const ignoredPlaylistIds = playlists.map(p => p.playlistId).filter(id => !selectedPlaylists.includes(id));
-            const ignoredAlbumIds = albums.map(a => a.albumId).filter(id => !selectedAlbums.includes(id));
+            const ignoredPlaylistIds = playlists.map(p => p.spotifyPlaylistId).filter(id => !selectedPlaylists.includes(id));
+            const ignoredAlbumIds = albums.map(a => a.spotifyAlbumId).filter(id => !selectedAlbums.includes(id));
 
             // Build track metadata map for live progress display
             const trackMeta: Record<string, { name: string; artist: string }> = {};
